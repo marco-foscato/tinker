@@ -51,6 +51,14 @@ c
       use_metal = .false.
       use_geom = .true.
       use_extra = .true.
+      use_lfmm = .false.
+      use_lfmmhar = .false.
+      use_lfmmmor = .false.
+      use_lfmmllr = .false.
+      use_lfmmvwl = .false.
+      use_lfmmelp = .false.
+      use_lfmmlfs = .false.
+      use_snb = .false.
 c
 c     read the potential energy force field parameter file
 c

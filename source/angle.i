@@ -13,6 +13,7 @@ c     #############################################################
 c
 c
 c     ak       harmonic angle force constant (kcal/mole/rad**2)
+c     akpoly   harmonic angle force constant for polynomial form
 c     anat     ideal bond angle or phase shift angle (degrees)
 c     afld     periodicity for Fourier bond angle term
 c     nangle   total number of bond angles in the system
@@ -20,6 +21,6 @@ c     iang     numbers of the atoms in each bond angle
 c
 c
       integer nangle,iang
-      real*8 ak,anat,afld
-      common /angle/ ak(maxang),anat(maxang),afld(maxang),nangle,
-     &               iang(4,maxang)
+      real*8 ak,anat,afld,akpoly
+      common /angle/ ak(maxang),anat(maxang),afld(maxang),
+     &               iang(4,maxang),akpoly(maxang,3),nangle

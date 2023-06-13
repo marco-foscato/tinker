@@ -51,6 +51,12 @@ c     maxbnd          covalent bonds in molecular system
 c     maxang          bond angles in molecular system
 c     maxtors         torsional angles in molecular system
 c     maxbitor        bitorsions in molecular system
+c     maxlfmm         LFMM centers
+c     maxlig          ligands per each LFMM center
+c     maxcrd          atoms within a single AOM region
+c     maxhlfse        hessina elements from each AOM region
+c     maxlfmmtrm      pure mechanic terms from LFMM
+c     maxnsnb         special non-bonded terms
 c
 c
       integer maxatm,maxval,maxgrp
@@ -64,11 +70,14 @@ c
       integer maxele,maxamino,maxnuc
       integer maxbnd,maxang,maxtors
       integer maxbitor
-      parameter (maxatm=100000)
+      integer maxlfmm,maxlig,maxcrd
+      integer maxhlfse,maxlfmmtrm
+      integer maxnsnb
+      parameter (maxatm=10000)
       parameter (maxval=8)
       parameter (maxgrp=1000)
       parameter (maxref=10)
-      parameter (maxtyp=5000)
+      parameter (maxtyp=2050)
       parameter (maxclass=1000)
       parameter (maxprm=25000)
       parameter (maxkey=25000)
@@ -83,7 +92,7 @@ c
       parameter (maxfft=250)
       parameter (maxfix=maxatm)
       parameter (maxvib=1000)
-      parameter (maxgeo=2500)
+      parameter (maxgeo=1000)
       parameter (maxcell=10000)
       parameter (maxring=10000)
       parameter (maxbio=10000)
@@ -95,3 +104,9 @@ c
       parameter (maxang=4*maxatm)
       parameter (maxtors=6*maxatm)
       parameter (maxbitor=8*maxatm)
+      parameter (maxlfmm=125)
+      parameter (maxlig=12)
+      parameter (maxcrd=50)
+      parameter (maxhlfse=3775)
+      parameter (maxlfmmtrm=maxlfmm*maxlig)
+      parameter (maxnsnb=100)

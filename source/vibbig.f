@@ -2110,6 +2110,7 @@ c
                   call egauss2 (i,xred,yred,zred)
                end if
             end if
+            if (use_snb) call esnbnd2 (i,xred,yred,zred)
 c
 c     call the electrostatic Hessian component routines
 c
@@ -2125,6 +2126,12 @@ c
             if (use_metal)  call emetal2 (i)
             if (use_geom)  call egeom2 (i)
             if (use_extra)  call extra2 (i)
+            if (use_lfmmhar)  call harm4lfmm2 (i)
+            if (use_lfmmmor)  call morse4lfmm2 (i)
+            if (use_lfmmvwl)  call vdw4lfmm2 (i)
+            if (use_lfmmllr)  call ll4lfmm2 (i)
+            if (use_lfmmelp)  call pair4lfmm2 (i)
+            if (use_lfmmlfs)  call lfse4lfmm2 (i)
 c
 c     store Hessian for the current atom block as a vector
 c

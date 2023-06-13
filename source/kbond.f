@@ -181,6 +181,12 @@ c
       if (forcefield .eq. 'MMFF94') then
          call kbondm
          return
+c
+c     use spetial bond parameter assignment method for MMFF-based LFMM
+c
+      else if (forcefield .eq. 'MMFFLF') then
+         call kbondlfmm
+         return
       end if
 c
 c     assign ideal bond length and force constant for each bond
@@ -511,18 +517,21 @@ c
       subroutine kbondm
       implicit none
       include 'sizes.i'
+      include 'iounit.i'
       include 'atmtyp.i'
       include 'bond.i'
       include 'keys.i'
       include 'merck.i'
       include 'potent.i'
-      integer i,j
+      integer i,j,k,size
       integer ia,ib,ita,itb
       integer next,minat
       integer list(20)
       real*8 khia,khib,cst
       real*8 rad0a,rad0b
       logical header,done
+      character*4 pa,pb
+      character*8 pt
       character*20 keyword
       character*120 record
       character*120 string
@@ -546,6 +555,12 @@ c
             do j = 1, 20, 2
                if (list(j).ne.0 .and. list(j+1).ne.0) then
                   nlignes = nlignes + 1
+                  if (nlignes .gt. mmffmaxbt1) then
+                     write(iout,11)
+   11                format (/,'KBOND -- Too many bonds having MMFF ',
+     &                         'Bond Type 1; Increase MMFFMAXBT1.')
+                     call fatal
+                  endif
                   bt_1(nlignes,1) = list(j)
                   bt_1(nlignes,2) = list(j+1)
                else
@@ -564,41 +579,48 @@ c
          ib = ibnd(2,i)
          ita = class(ia)
          itb = class(ib)
-         if (ia .le. ib) then
-            do j = 1, nlignes
-               if (ia.eq.bt_1(j,1) .and. ib.eq.bt_1(j,2)) then
-                  bk(i) = mmff_kb1(ita,itb)
-                  bl(i) = mmff_b1(ita,itb)
-                  done = .true.
-                  if (bk(i) .eq. 1000.0d0)  done = .false.
-                  if (bl(i) .eq. 1000.0d0)  done = .false.
-                  goto 30
-               end if
-            end do
-            bk(i) = mmff_kb(ita,itb)
-            bl(i) = mmff_b0(ita,itb)
-            done = .true.
-            if (bk(i) .eq. 1000.0d0)  done = .false.
-            if (bl(i) .eq. 1000.0d0)  done = .false.
-            goto 30
-         else if (ib .le. ia) then
-            do j = 1, nlignes
-               if (ib.eq.bt_1(j,1) .and. ia.eq.bt_1(j,2)) then
-                  bk(i) = mmff_kb1(itb,ita)
-                  bl(i) = mmff_b1(itb,ita)
-                  done = .true.
-                  if (bk(i) .eq. 1000.0d0)  done = .false.
-                  if (bl(i) .eq. 1000.0d0)  done = .false.
-                  goto 30
-               end if
-            end do
-            bk(i) = mmff_kb(itb,ita)
-            bl(i) = mmff_b0(itb,ita)
-            done = .true.
-            if (bk(i) .eq. 1000.0d0)  done = .false.
-            if (bl(i) .eq. 1000.0d0)  done = .false.
-            goto 30
+         size = 4
+         call numeral (ita,pa,size)
+         call numeral (itb,pb,size)
+         if (ita .le. itb) then
+            pt = pa//pb
+         else
+            pt = pb//pa
          end if
+         bk(i) = 0.0d0
+         bl(i) = 0.0d0
+         done = .false.
+c
+c        Look for parameters of bond stretch for bonds of Type 1
+c	
+         do j = 1, nlignes
+            if ((ia.eq.bt_1(j,1) .and. ib.eq.bt_1(j,2)) .or.
+     &         (ib.eq.bt_1(j,1) .and. ia.eq.bt_1(j,2))) then
+               do k = 1, mmffmaxnb1
+                  if (mmffbs1(k) .eq. pt) then
+                     bk(i) = mmff_kb1(k) 
+                     bl(i) = mmff_b1(k)
+                     done = .true.
+                     if (bk(i) .eq. 1000.0d0)  done = .false.
+                     if (bl(i) .eq. 1000.0d0)  done = .false.
+                     goto 30
+                  endif
+               enddo
+            endif
+         enddo
+c
+c        otherwhise get the parameters for Type 0
+c
+         do j = 1, mmffmaxnb0
+           if (mmffbs0(j) .eq. pt) then
+             bk(i) = mmff_kb0(j)
+             bl(i) = mmff_b0(j)
+             done = .true.
+             if (bk(i) .eq. 1000.0d0)  done = .false.
+             if (bl(i) .eq. 1000.0d0)  done = .false.
+             goto 30
+           endif
+         enddo
 c
 c     estimate missing bond parameters via an empirical rule
 c
@@ -623,3 +645,212 @@ c
       if (nbond .eq. 0)  use_bond = .false.
       return
       end
+c
+c
+c     #######################################################################
+c     ##                                                                   ##
+c     ##  subroutine kbondlfmm  --  assign MMFFLF bond stretch parameters  ##
+c     ##                                                                   ##
+c     #######################################################################
+c
+c
+c     "kbondlfmm" assigns force constants and ideal bond length to
+c     each bond according to the modified Merck Molecular Force Field (MMFF)
+c     adopted by Ligand Field Molecular Mechanics (LFMM). In LFMM the 
+c     coefficients of the polynomial function describing the energy of 
+c     bond stretches are not related by a constant as in MMFF.
+c     
+c
+c     literature references:
+c
+c     V. J. Burton, R. J. Deeth, C. M. Kemp and P.J. Gilbert,
+c     "Molecular Mechanics for Coordination Complexes: The Impact
+c     of Adding d-Electron Stabilization Energies", Journal of
+c     American Chemical Society, 117, 8207-8415 (1995)
+c
+c
+      subroutine kbondlfmm
+      implicit none
+      include 'sizes.i'
+      include 'iounit.i'
+      include 'atmtyp.i'
+      include 'bond.i'
+      include 'couple.i'
+      include 'keys.i'
+      include 'klfmms.i'
+      include 'lfmmset.i'
+      include 'merck.i'
+      include 'ring.i'
+      include 'potent.i'
+      include 'bndpot.i'
+      integer i,j,k
+      integer size
+      integer ia,ib
+      integer ita,itb
+      integer next,minat
+      integer list(20)
+      real*8 khia,khib,cst
+      real*8 rad0a,rad0b
+      logical header,done,typ1
+      character*4 pa,pb,pc
+      character*8 pt
+      character*12 ptt
+      character*20 keyword
+      character*30 str
+      character*120 record
+      character*120 string
+c
+c
+c     get single bonds that could be double (MMFF bond type=1)
+c
+      nlignes = 0
+      do i = 1, nkey
+         next = 1
+         record = keyline(i)
+         call gettext (record,keyword,next)
+         call upcase (keyword)
+         if (keyword(1:12) .eq. 'MMFF-PIBOND ') then
+            do j = 1, 20
+               list(j) = 0
+            end do
+            string = record(next:120)
+            read (string,*,err=10,end=10)  (list(j),j=1,20)
+   10       continue
+            do j = 1, 20, 2
+               if (list(j).ne.0 .and. list(j+1).ne.0) then
+                  nlignes = nlignes + 1
+                  if (nlignes .gt. mmffmaxbt1) then
+                     write(iout,11)
+   11                format (/,'KBOND -- Too many bonds having MMFF ',
+     &                         'Bond Type 1; Increase MMFFMAXBT1.')
+                     call fatal
+                  endif
+                  bt_1(nlignes,1) = list(j)
+                  bt_1(nlignes,2) = list(j+1)
+               else
+                  goto 20
+               end if
+            end do
+   20       continue
+         end if
+      end do
+c
+c     assign bond length and force constants
+c
+      header = .true.
+      do i = 1, nbond
+         ia = ibnd(1,i)
+         ib = ibnd(2,i)
+         ita = class(ia)
+         itb = class(ib)
+c
+c        Search parameters
+c
+         size = 4
+         call numeral (ita,pa,size)
+         call numeral (itb,pb,size)
+         if (ita .le. itb) then
+            pt = pa//pb
+         else
+            pt = pb//pa
+         end if
+         bk(i) = 0.0d0
+         do j = 1, 3
+             bkpoly(i,j) = 0.0d0
+         enddo
+         bl(i) = 0.0d0
+         done = .false.
+         typ1 = .false.      
+c
+c        Define MMFF type of bond (0 or 1)
+c       
+         do j = 1, nlignes
+            if ((ia.eq.bt_1(j,1) .and. ib.eq.bt_1(j,2)) .or.
+     &         (ib.eq.bt_1(j,1) .and. ia.eq.bt_1(j,2))) then
+               typ1 = .true.
+               exit
+            endif
+         enddo
+         if (typ1) then
+            call numeral (1,pc,size)
+         else
+            call numeral (0,pc,size)
+         end if
+         ptt = pt//pc
+c
+c        Look for parameters of bond stretch
+c
+         do j = 1, maxnstrlf
+            if (strlfid(j) .eq. ptt) then
+               do k =1, 3
+                  bkpoly(i,k) = strlfcon(j,k)
+               enddo
+               bl(i) = strlfeq(j)
+               done = .true.
+               goto 30
+            endif
+         enddo
+c
+c        Estimate missing bond parameters via an empirical rule
+c
+   30    continue
+         minat = min(atomic(ia),atomic(ib))
+         if (minat .eq. 0)  done = .true.
+         if (.not. done) then
+            call buildBndStr(ia,ib,str)
+  40        format (/,' KBOND  --  Empiric bond stretching rule ',
+     &              'for atoms(classes) ',a)
+ 
+            write(iout,40) trim(adjustl(str))
+            khia = paulel(atomic(ia))
+            khib = paulel(atomic(ib))
+            rad0a = rad0(atomic(ia))
+            rad0b = rad0(atomic(ib))
+            cst = 0.085d0
+            if (atomic(ia).eq.1 .or. atomic(ib).eq.1)  cst = 0.05d0
+            bl(i) = rad0a + rad0b - cst*abs(khia-khib)**1.4d0
+            bk(i) = kbref(atomic(ia),atomic(ib))
+     &                 * (r0ref(atomic(ia),atomic(ib))/bl(i))**6
+            bkpoly(i,1) = bk(i)
+            bkpoly(i,2) = bk(i)
+            bkpoly(i,3) = bk(i)
+            bk(i) = 0.0d0
+         end if
+         bndtyp = 'POLYNOME'
+      end do
+c
+c     turn off the bond stretch potential if it is not used
+c
+      if (nbond .eq. 0)  use_bond = .false.
+      return
+      end subroutine
+c
+c
+c     #############################################################
+c     ##                                                         ##
+c     ##  buildBndStr  --  creates a string representing a bond  ##
+c     ##                                                         ##
+c     #############################################################
+c
+c     "buildBndStr" prepares a string for human readable, quick 
+c     identification of a bond stretching. 
+c     The string reports both atom indexes and classes.
+c
+c
+      subroutine  buildBndStr(ia,ib,string)
+      implicit none
+      include 'sizes.i'
+      include 'atmtyp.i'
+      integer ia,ib
+      character*6 pa,pb
+      character*6 ca,cb
+      character*30 string
+
+      write(pa,'(I6)') ia
+      write(pb,'(I6)') ib
+      write(ca,'(I6)') class(ia)
+      write(cb,'(I6)') class(ib)
+      string = trim(adjustl(pa))//'('//trim(adjustl(ca))//')-'
+     &       //trim(adjustl(pb))//'('//trim(adjustl(cb))//') '
+      return
+      end subroutine

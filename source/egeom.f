@@ -37,6 +37,7 @@ c
       real*8 angle,target
       real*8 dot,force
       real*8 cosine,sine
+      real*8 cosdtr,dtr
       real*8 rab2,rcb2
       real*8 xt,yt,zt
       real*8 xu,yu,zu
@@ -258,8 +259,14 @@ c
                else if (dt .lt. -180.0d0) then
                   dt = dt + 360.0d0
                end if
-               dt2 = dt * dt
-               e = force * dt2
+               if (use_tfix2) then
+                  dtr = dt / radian
+                  cosdtr = cos(dtr)
+                  e = force * (1-cosdtr)**2
+               else 
+                  dt2 = dt * dt
+                  e = force * dt2
+               end if
                if (use_group)  e = e * fgrp
                eg = eg + e
             end if

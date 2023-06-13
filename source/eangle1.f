@@ -164,6 +164,18 @@ c
                      sine = sin((fold*angle-ideal)/radian)
                      e = factor * force * (1.0d0+cosine)
                      deddt = -factor * force * fold * sine
+                  else if (angtyp(i) .eq. 'POLYNOME') then
+                     dt = angle - ideal
+                     dt2 = dt * dt
+                     dt3 = dt2 * dt
+                     dt4 = dt2 * dt2
+                     e = angunit * ( akpoly(i,1) * dt2 +
+     &                               akpoly(i,2) * cang * dt3 +
+     &                               akpoly(i,3) * qang * dt4 )
+                     deddt = 2.0d0 * angunit * radian *
+     &                                   ( akpoly(i,1) * dt +
+     &                             1.5d0 * akpoly(i,2) * cang * dt2 +
+     &                             2.0d0 * akpoly(i,3) * qang * dt3 )
                   end if
 c
 c     scale the interaction based on its group membership

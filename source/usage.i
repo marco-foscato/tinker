@@ -20,4 +20,4 @@ c
       integer nuse
       integer, pointer :: iuse(:)
       logical, pointer :: use(:)
-      common /usage/ nuse,iuse,use
+      common /usage/ iuse,use,nuse

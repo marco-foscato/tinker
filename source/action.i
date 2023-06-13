@@ -37,6 +37,13 @@ c     nes     number of solvation energy terms computed
 c     nelf    number of metal ligand field energy terms computed
 c     neg     number of geometric restraint energy terms computed
 c     nex     number of extra energy terms computed
+c     nelfse  number of LFMM ligand field stabilization energy terms computed
+c     nehalf  number of LFMM harmonic M-L bond stretch energy terms computed
+c     nemolf  number of LFMM Morse M-L bond stretch energy terms computed
+c     nelllf  number of LFMM ligand-ligand repulsion energy terms computed
+c     nevwlf  number of LFMM vdW ligand-ligand repulsion energy terms computed
+c     nepair  number of LFMM electron pairing energy terms computed
+c     nesnb   number of special 12-10 non-bonded energy terms computed
 c
 c
       integer neb,nea,neba,neub
@@ -45,6 +52,10 @@ c
       integer nebt,nett,nev,nec
       integer necd,ned,nem,nep,new
       integer ner,nes,nelf,neg,nex
+      integer nelfse,nehalf,nemolf
+      integer nelllf,nevwlf,nepair
+      integer nesnb
       common /action/ neb,nea,neba,neub,neaa,neopb,neopd,neid,neit,
      &                net,nept,nebt,nett,nev,nec,necd,ned,nem,nep,new,
-     &                ner,nes,nelf,neg,nex
+     &                ner,nes,nelf,neg,nex,
+     &                nelfse,nehalf,nemolf,nelllf,nevwlf,nepair,nesnb

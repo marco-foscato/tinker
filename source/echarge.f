@@ -19,8 +19,25 @@ c
       implicit none
       include 'sizes.i'
       include 'cutoff.i'
+      include 'chgpot.i'
+      include 'iounit.i'
       include 'warp.i'
 c
+c
+c     check settings
+c
+      if (tapertype.ne.1 .or. rdepdielec) then
+         if (use_smooth .or. use_ewald .or. use_clist 
+     &       .or. use_lights) then
+            write (iout,10)
+   10       format (/,' ECHARGE  --  Distance-dependent dielectric '
+     &              'form for charge-charge interaction and '
+     &              'tapering type>1 are implemented only for '
+     &              'pairwise double loop. Cannot apply smoothing, '
+     &              'and Ewald, or use different looping method.')
+            call fatal
+         endif
+      end if
 c
 c     choose the method for summing over pairwise interactions
 c
@@ -69,6 +86,7 @@ c
       include 'group.i'
       include 'shunt.i'
       include 'usage.i'
+      include 'iounit.i'
       integer i,j,k
       integer ii,kk
       integer in,kn
@@ -165,12 +183,16 @@ c
                   r = sqrt(r2)
                   rb = r + ebuffer
                   fik = fi * pchg(kk) * cscale(kn)
-                  e = fik / rb
+                  if (rdepdielec) then
+                     e = fik / rb**2
+                  else
+                     e = fik / rb
+                     shift = fik / (0.5d0*(off+cut))
+                     e = e - shift
+                  endif
 c
 c     use shifted energy switching if near the cutoff distance
 c
-                  shift = fik / (0.5d0*(off+cut))
-                  e = e - shift
                   if (rc2 .gt. cut2) then
                      rc = sqrt(rc2)
                      rc3 = rc2 * rc
@@ -178,11 +200,22 @@ c
                      rc5 = rc2 * rc3
                      rc6 = rc3 * rc3
                      rc7 = rc3 * rc4
-                     taper = c5*rc5 + c4*rc4 + c3*rc3
-     &                          + c2*rc2 + c1*rc + c0
-                     trans = fik * (f7*rc7 + f6*rc6 + f5*rc5 + f4*rc4
-     &                               + f3*rc3 + f2*rc2 + f1*rc + f0)
-                     e = e*taper + trans
+                     if (tapertype .eq. 1) then
+                        taper = c5*rc5 + c4*rc4 + c3*rc3
+     &                             + c2*rc2 + c1*rc + c0
+                        trans = fik * (f7*rc7 + f6*rc6 + f5*rc5 + f4*rc4
+     &                                  + f3*rc3 + f2*rc2 + f1*rc + f0)
+                        e = e*taper + trans
+                     else if (tapertype .eq. 2) then
+                        taper = c5*rc5 + c4*rc4 + c3*rc3
+     &                             + c2*rc2 + c1*rc + c0
+                        e = e*taper
+                     else
+                        write (iout,10)
+   10                   format (/,' ECHARGE  --  Unknown tapering ',
+     &                          'type; Select proper CHG-TAPER-TYPE.')
+                        call fatal
+                     endif
                   end if
 c
 c     scale the interaction based on its group membership
@@ -277,12 +310,16 @@ c
                      if (use_polymer) then
                         if (r2 .le. polycut2)  fik = fik * cscale(kn)
                      end if
-                     e = fik / rb
+                     if (rdepdielec) then
+                        e = fik / rb**2
+                     else
+                        e = fik / rb
+                        shift = fik / (0.5d0*(off+cut))
+                        e = e - shift
+                     endif
 c
 c     use shifted energy switching if near the cutoff distance
 c
-                     shift = fik / (0.5d0*(off+cut))
-                     e = e - shift
                      if (rc2 .gt. cut2) then
                         rc = sqrt(rc2)
                         rc3 = rc2 * rc
@@ -290,11 +327,20 @@ c
                         rc5 = rc2 * rc3
                         rc6 = rc3 * rc3
                         rc7 = rc3 * rc4
-                        taper = c5*rc5 + c4*rc4 + c3*rc3
+                        if (tapertype .eq. 1) then
+                           taper = c5*rc5 + c4*rc4 + c3*rc3
      &                             + c2*rc2 + c1*rc + c0
-                        trans = fik * (f7*rc7 + f6*rc6 + f5*rc5 + f4*rc4
-     &                                  + f3*rc3 + f2*rc2 + f1*rc + f0)
-                        e = e*taper + trans
+                           trans = fik * (f7*rc7 + f6*rc6 + f5*rc5 
+     &                          + f4*rc4 + f3*rc3 + f2*rc2 + f1*rc + f0)
+                           e = e*taper + trans
+                        else if (tapertype .eq. 2) then
+                           taper = c5*rc5 + c4*rc4 + c3*rc3
+     &                                + c2*rc2 + c1*rc + c0
+                           e = e*taper
+                        else
+                           write (iout,10)
+                           call fatal
+                        endif
                      end if
 c
 c     scale the interaction based on its group membership

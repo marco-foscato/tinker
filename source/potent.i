@@ -38,6 +38,14 @@ c     use_geom    logical flag governing use of geometric restraints
 c     use_extra   logical flag governing use of extra potential term
 c     use_born    logical flag governing use of Born radii values
 c     use_orbit   logical flag governing use of pisystem computation
+c     use_lfmm    logical flag governing use of LFMM term
+c     use_lfmmhar logical flag governing use of harmonic stretch term for LFMM
+c     use_lfmmmor logical flag governing use of Morse stretch term for LFMM 
+c     use_lfmmllr logical flag governing use of l-l repulsion term for LFMM 
+c     use_lfmmvwl logical flag governing use of Lennard-Jones l-l term for LFMM 
+c     use_lfmmelp logical flag governing use of electron pairing term for LFMM 
+c     use_lfmmlfs logical flag governing use of ligand field  term for LFMM
+c     use_snb     logical flag governing use of special 12-10 non-bonded term
 c
 c
       logical use_bond,use_angle,use_strbnd
@@ -49,9 +57,15 @@ c
       logical use_polar,use_rxnfld,use_solv
       logical use_metal,use_geom,use_extra
       logical use_born,use_orbit
+      logical use_lfmm,use_lfmmhar,use_lfmmmor
+      logical use_lfmmllr,use_lfmmvwl
+      logical use_lfmmelp,use_lfmmlfs,use_snb
       common /potent/ use_bond,use_angle,use_strbnd,use_urey,use_angang,
      &                use_opbend,use_opdist,use_improp,use_imptor,
      &                use_tors,use_pitors,use_strtor,use_tortor,use_vdw,
      &                use_charge,use_chgdpl,use_dipole,use_mpole,
      &                use_polar,use_rxnfld,use_solv,use_metal,use_geom,
-     &                use_extra,use_born,use_orbit
+     &                use_extra,use_born,use_orbit,
+     &                use_lfmm,use_lfmmhar,use_lfmmmor,
+     &                use_lfmmllr,use_lfmmvwl,
+     &                use_lfmmelp,use_lfmmlfs,use_snb

@@ -37,7 +37,7 @@ c
 c
 c     set stepsize for derivatives and default group weight
 c
-      eps = 1.0d-5
+      eps = 1.0d-6
       fgrp = 1.0d0
       twosided = .false.
       if (n .le. 50)  twosided = .true.

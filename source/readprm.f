@@ -43,16 +43,32 @@ c
       include 'kurybr.i'
       include 'kvdws.i'
       include 'kvdwpr.i'
+      include 'klfmms.i'
+      include 'ksnbnd.i'
+      include 'lfmmset.i'
       include 'merck.i'
       include 'params.i'
+      include 'charge.i'
       integer i,j,iprm
       integer ia,ib,ic,id,ie
       integer if,ig,ih,ii
       integer size,next
       integer length,trimtext
+      integer nbmmff,nbmmff1
       integer nb,nb5,nb4,nb3,nel
       integer na,na5,na4,na3,naf
+      integer nammff0,nammff1,nammff2
+      integer nammff3,nammff4,nammff5
+      integer nammff6,nammff7,nammff8
       integer nsb,nu,nopb,nopd
+      integer nsbmmff0,nsbmmff1,nsbmmff2
+      integer nsbmmff3,nsbmmff4,nsbmmff5
+      integer nsbmmff6,nsbmmff7,nsbmmff8
+      integer nsbmmff9,nsbmmff10,nsbmmff11
+      integer nstrlf,nanglf,ntorlf
+      integer nhalf,nmolf,nlllf,nvwlf
+      integer naomsig,naompix,naompiy
+      integer naomxds,npairlf,nsnb
       integer ndi,nti,nt,nt5,nt4
       integer npt,nbt,ntt,nd,nd5
       integer nd4,nd3,nvp,nhb,nmp
@@ -93,17 +109,40 @@ c     initialize the counters for some parameter types
 c
       nvp = 0
       nhb = 0
+      nbmmff = 0
+      nbmmff1 = 0
       nb = 0
       nb5 = 0
       nb4 = 0
       nb3 = 0
       nel = 0
       na = 0
+      nammff0 = 0
+      nammff1 = 0
+      nammff2 = 0
+      nammff3 = 0
+      nammff4 = 0
+      nammff5 = 0
+      nammff6 = 0
+      nammff7 = 0
+      nammff8 = 0
       na5 = 0
       na4 = 0
       na3 = 0
       naf = 0
       nsb = 0
+      nsbmmff0 = 0
+      nsbmmff1 = 0
+      nsbmmff2 = 0
+      nsbmmff3 = 0
+      nsbmmff4 = 0
+      nsbmmff5 = 0
+      nsbmmff6 = 0
+      nsbmmff7 = 0
+      nsbmmff8 = 0
+      nsbmmff9 = 0
+      nsbmmff10 = 0
+      nsbmmff11 = 0
       nu = 0
       nopb = 0
       nopd = 0
@@ -123,6 +162,19 @@ c
       npi = 0
       npi5 = 0
       npi4 = 0
+      nstrlf = 0
+      nanglf = 0
+      ntorlf = 0
+      nhalf = 0
+      nmolf = 0
+      nlllf = 0
+      nvwlf = 0
+      naomsig = 0
+      naompix = 0
+      naompiy = 0
+      naomxds = 0
+      npairlf = 0
+      nsnb = 0
 c
 c     number of characters in an atom number text string
 c
@@ -900,7 +952,11 @@ c
             string = record(next:120)
             read (string,*,err=340,end=340)  ia,cg
   340       continue
-            if (ia .ne. 0)  chg(ia) = cg
+            if (ia .gt. 0)  chg(ia) = cg
+            if (ia .lt. 0) then
+               ia = -ia
+               pchg(ia) = cg
+            endif
 c
 c     bond dipole moment parameters
 c
@@ -1174,7 +1230,7 @@ c
             read (string,*,err=500,end=500)  ib
   500       continue
             if (ia .ge. maxbio) then
-               write (iout,40)
+               write (iout,510)
   510          format (/,' READPRM  --  Too many Biopolymer Types;',
      &                    ' Increase MAXBIO')
                call fatal
@@ -1211,17 +1267,26 @@ c
             string = record(next:120)
             read (string,*,err=530,end=530)  ia,ib,fc,bd,bt
   530       continue
-            nb = nb + 1
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
             if (bt .eq. 0) then
-               mmff_kb(ia,ib) = fc
-               mmff_kb(ib,ia) = fc
-               mmff_b0(ia,ib) = bd
-               mmff_b0(ib,ia) = bd
+               nbmmff = nbmmff + 1
+               if (ia .le. ib) then
+                 mmffbs0(nbmmff) = pa//pb
+               else
+                 mmffbs0(nbmmff) = pb//pa
+               endif
+               mmff_kb0(nbmmff) = fc
+               mmff_b0(nbmmff) = bd
             else if (bt .eq. 1) then
-               mmff_kb1(ia,ib) = fc
-               mmff_kb1(ib,ia) = fc
-               mmff_b1(ia,ib) = bd
-               mmff_b1(ib,ia) = bd
+               nbmmff1 = nbmmff1 + 1
+               if (ia .le. ib) then
+                 mmffbs1(nbmmff1) = pa//pb
+               else
+                 mmffbs1(nbmmff1) = pb//pa
+               endif
+               mmff_kb1(nbmmff1) = fc             
+               mmff_b1(nbmmff1) = bd
             end if
 c
 c     MMFF bond stretching empirical rule parameters
@@ -1234,6 +1299,12 @@ c
             string = record(next:120)
             read (string,*,err=540,end=540)  ia,ib,fc,bd
   540       continue
+            if ((ia .gt. maxele) .or. (ib .gt. maxele)) then
+               write (iout,541)
+  541          format (/,' READPRM  --  Exceeding atomic number limit;',
+     &                    ' Increase MAXELE')
+               call fatal
+            endif
             r0ref(ia,ib) = fc
             r0ref(ib,ia) = fc
             kbref(ia,ib) = bd
@@ -1251,55 +1322,152 @@ c
             string = record(next:120)
             read (string,*,err=550,end=550)  ia,ib,ic,fc,an1,at
   550       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            call numeral (ic,pc,size)
             na = na + 1
             if (an1 .ne. 0.0d0) then
                if (at .eq. 0) then
-                  mmff_ka(ia,ib,ic) = fc
-                  mmff_ka(ic,ib,ia) = fc
-                  mmff_ang0(ia,ib,ic) = an1
-                  mmff_ang0(ic,ib,ia) = an1
+                  nammff0 = nammff0 + 1
+                  if (nammff0 .gt. mmffmaxna) then
+                     write (iout,551)
+  551                format (/,' READPRM  --  Too many params for ',
+     &                         ' MMFF angle bending; ',
+     &                         ' Increase MMFFMAXNA.')
+                     call fatal
+                  endif
+                  if (ia .le. ic) then
+                     mmffangcl0(nammff0) = pa//pb//pc
+                  else
+                     mmffangcl0(nammff0) = pc//pb//pa
+                  end if
+                  mmff_ka0(nammff0) = fc
+                  mmff_ang0(nammff0) = an1
                else if (at .eq. 1) then
-                  mmff_ka1(ia,ib,ic) = fc
-                  mmff_ka1(ic,ib,ia) = fc
-                  mmff_ang1(ia,ib,ic) = an1
-                  mmff_ang1(ic,ib,ia) = an1
+                  nammff1 = nammff1 + 1
+                  if (nammff1 .gt. mmffmaxna) then
+                     write (iout,551)
+                     call fatal
+                  endif
+                  if (ia .le. ic) then
+                     mmffangcl1(nammff1) = pa//pb//pc
+                  else
+                     mmffangcl1(nammff1) = pc//pb//pa
+                  end if
+                  mmff_ka1(nammff1) = fc
+                  mmff_ang1(nammff1) = an1
                else if (at .eq. 2) then
-                  mmff_ka2(ia,ib,ic) = fc
-                  mmff_ka2(ic,ib,ia) = fc
-                  mmff_ang2(ia,ib,ic) = an1
-                  mmff_ang2(ic,ib,ia) = an1
+                  nammff2 = nammff2 + 1
+                  if (nammff2 .gt. mmffmaxna) then
+                     write (iout,551)
+                     call fatal
+                  endif
+                  if (ia .le. ic) then
+                     mmffangcl2(nammff2) = pa//pb//pc
+                  else
+                     mmffangcl2(nammff2) = pc//pb//pa
+                  end if
+                  mmff_ka2(nammff2) = fc
+                  mmff_ang2(nammff2) = an1
                else if (at .eq. 3) then
-                  mmff_ka3(ia,ib,ic) = fc
-                  mmff_ka3(ic,ib,ia) = fc
-                  mmff_ang3(ia,ib,ic) = an1
-                  mmff_ang3(ic,ib,ia) = an1
+                  nammff3 = nammff3 + 1
+                  if (nammff3 .gt. mmffmaxna) then
+                     write (iout,551)
+                     call fatal
+                  endif
+                  if (ia .le. ic) then
+                     mmffangcl3(nammff3) = pa//pb//pc
+                  else
+                     mmffangcl3(nammff3) = pc//pb//pa
+                  end if
+                  mmff_ka3(nammff3) = fc
+                  mmff_ang3(nammff3) = an1
                else if (at .eq. 4) then
-                  mmff_ka4(ia,ib,ic) = fc
-                  mmff_ka4(ic,ib,ia) = fc
-                  mmff_ang4(ia,ib,ic) = an1
-                  mmff_ang4(ic,ib,ia) = an1
+                  nammff4 = nammff4 + 1
+                  if (nammff4 .gt. mmffmaxna) then
+                     write (iout,551)
+                     call fatal
+                  endif
+                  if (ia .le. ic) then
+                     mmffangcl4(nammff4) = pa//pb//pc
+                  else
+                     mmffangcl4(nammff4) = pc//pb//pa
+                  end if
+                  mmff_ka4(nammff4) = fc
+                  mmff_ang4(nammff4) = an1
                else if (at .eq. 5) then
-                  mmff_ka5(ia,ib,ic) = fc
-                  mmff_ka5(ic,ib,ia) = fc
-                  mmff_ang5(ia,ib,ic) = an1
-                  mmff_ang5(ic,ib,ia) = an1
+                  nammff5 = nammff5 + 1
+                  if (nammff5 .gt. mmffmaxna) then
+                     write (iout,551)
+                     call fatal
+                  endif
+                  if (ia .le. ic) then
+                     mmffangcl5(nammff5) = pa//pb//pc
+                  else
+                     mmffangcl5(nammff5) = pc//pb//pa
+                  end if
+                  mmff_ka5(nammff5) = fc
+                  mmff_ang5(nammff5) = an1
                else if (at .eq. 6) then
-                  mmff_ka6(ia,ib,ic) = fc
-                  mmff_ka6(ic,ib,ia) = fc
-                  mmff_ang6(ia,ib,ic) = an1
-                  mmff_ang6(ic,ib,ia) = an1
+                  nammff6 = nammff6 + 1
+                  if (nammff6 .gt. mmffmaxna) then
+                     write (iout,551)
+                     call fatal
+                  endif
+                  if (ia .le. ic) then
+                     mmffangcl6(nammff6) = pa//pb//pc
+                  else
+                     mmffangcl6(nammff6) = pc//pb//pa
+                  end if
+                  mmff_ka6(nammff6) = fc
+                  mmff_ang6(nammff6) = an1
                else if (at .eq. 7) then
-                  mmff_ka7(ia,ib,ic) = fc
-                  mmff_ka7(ic,ib,ia) = fc
-                  mmff_ang7(ia,ib,ic) = an1
-                  mmff_ang7(ic,ib,ia) = an1
+                  nammff7 = nammff7 + 1
+                  if (nammff7 .gt. mmffmaxna) then
+                     write (iout,551)
+                     call fatal
+                  endif
+                  if (ia .le. ic) then
+                     mmffangcl7(nammff7) = pa//pb//pc
+                  else
+                     mmffangcl7(nammff7) = pc//pb//pa
+                  end if
+                  mmff_ka7(nammff7) = fc
+                  mmff_ang7(nammff7) = an1
                else if (at .eq. 8) then
-                  mmff_ka8(ia,ib,ic) = fc
-                  mmff_ka8(ic,ib,ia) = fc
-                  mmff_ang8(ia,ib,ic) = an1
-                  mmff_ang8(ic,ib,ia) = an1
+                  nammff8 = nammff8 + 1
+                  if (nammff8 .gt. mmffmaxna) then
+                     write (iout,551)
+                     call fatal
+                  endif
+                  if (ia .le. ic) then
+                     mmffangcl8(nammff8) = pa//pb//pc
+                  else
+                     mmffangcl8(nammff8) = pc//pb//pa
+                  end if
+                  mmff_ka8(nammff8) = fc
+                  mmff_ang8(nammff8) = an1
                end if
             end if
+c
+c     MMFF angle bending empirical rule parameters
+c
+         else if (keyword(1:10) .eq. 'MMFFANGER ') then
+            ia = 0
+            an1 = 0.0d0
+            an2 = 0.0d0
+            string = record(next:120)
+            read (string,*,err=555,end=555)  ia,an1,an2
+  555       continue
+            if (ia .ge. maxele) then
+               write (iout,556) ia
+  556          format (/,' READPRM  --  Exceeding atomic number limit;',
+     &                    ' Increase MAXELE or check MMFFANGER for',
+     &                    ' atomic number = ',i4)
+               call fatal
+            endif
+            mmffanger(ia,1) = an1
+            mmffanger(ia,2) = an2
 c
 c     MMFF stretch-bend parameters
 c
@@ -1313,67 +1481,193 @@ c
             string = record(next:120)
             read (string,*,err=560,end=560)  ia,ib,ic,abc,cba,sbt
   560       continue
+            size = 4
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            call numeral (ic,pc,size)
             if (ia .ne. 0) then
                if (sbt .eq. 0) then
-                  stbn_abc(ia,ib,ic) = abc
-                  if (ic .ne. ia)  stbn_abc(ic,ib,ia) = cba
-                  stbn_cba(ia,ib,ic) = cba
-                  if (ic .ne. ia)  stbn_cba(ic,ib,ia) = abc
+                  if (nsbmmff0 .gt. mmffmaxnsb) then
+                     write(iout,561)
+  561                format (/,' READPRM  --  Too Many Stretch-Bend ',
+     &                         ' Parameters; Increase MMFFMAXNSB')
+                     call fatal
+                  endif
+                  nsbmmff0 = nsbmmff0 + 1
+                  mmffsbabclc0(nsbmmff0) = pa//pb//pc
+                  stbn_abc0(nsbmmff0) = abc
+                  stbn_cba0(nsbmmff0) = cba
+                  if (ia .ne. ic) then
+                     nsbmmff0 = nsbmmff0 + 1
+                     mmffsbabclc0(nsbmmff0) = pc//pb//pa
+                     stbn_abc0(nsbmmff0) = cba
+                     stbn_cba0(nsbmmff0) = abc
+                  endif
                else if (sbt .eq. 1) then
-                  stbn_abc1(ia,ib,ic) = abc
-                  if (ic .ne. ia)  stbn_abc1(ic,ib,ia) = cba
-                  stbn_cba1(ia,ib,ic) = cba
-                  if (ic .ne. ia)  stbn_cba1(ic,ib,ia) = abc
+                  if (nsbmmff1 .gt. mmffmaxnsb) then
+                     write(iout,561)
+                     call fatal
+                  endif
+                  nsbmmff1 = nsbmmff1 + 1
+                  mmffsbabclc1(nsbmmff1) = pa//pb//pc
+                  stbn_abc1(nsbmmff1) = abc
+                  stbn_cba1(nsbmmff1) = cba
+                  if (ia .ne. ic) then
+                     nsbmmff1 = nsbmmff1 + 1
+                     mmffsbabclc1(nsbmmff1) = pc//pb//pa
+                     stbn_abc1(nsbmmff1) = cba
+                     stbn_cba1(nsbmmff1) = abc
+                  endif
                else if (sbt .eq. 2) then
-                  stbn_abc2(ia,ib,ic) = abc
-                  if (ic .ne. ia)  stbn_abc2(ic,ib,ia) = cba
-                  stbn_cba2(ia,ib,ic) = cba
-                  if (ic .ne. ia)  stbn_cba2(ic,ib,ia) = abc
+                  if (nsbmmff2 .gt. mmffmaxnsb) then
+                     write(iout,561)
+                     call fatal
+                  endif
+                  nsbmmff2 = nsbmmff2 + 1
+                  mmffsbabclc2(nsbmmff2) = pa//pb//pc
+                  stbn_abc2(nsbmmff2) = abc
+                  stbn_cba2(nsbmmff2) = cba
+                  if (ia .ne. ic) then
+                     nsbmmff2 = nsbmmff2 + 1
+                     mmffsbabclc2(nsbmmff2) = pc//pb//pa
+                     stbn_abc2(nsbmmff2) = cba
+                     stbn_cba2(nsbmmff2) = abc
+                  endif
                else if (sbt .eq. 3) then
-                  stbn_abc3(ia,ib,ic) = abc
-                  if (ic .ne. ia)  stbn_abc3(ic,ib,ia) = cba
-                  stbn_cba3(ia,ib,ic) = cba
-                  if (ic .ne. ia)  stbn_cba3(ic,ib,ia) = abc
+                  if (nsbmmff3 .gt. mmffmaxnsb) then
+                     write(iout,561)
+                     call fatal
+                  endif
+                  nsbmmff3 = nsbmmff3 + 1
+                  mmffsbabclc3(nsbmmff3) = pa//pb//pc
+                  stbn_abc3(nsbmmff3) = abc
+                  stbn_cba3(nsbmmff3) = cba
+                  if (ia .ne. ic) then
+                     nsbmmff3 = nsbmmff3 + 1
+                     mmffsbabclc3(nsbmmff3) = pc//pb//pa
+                     stbn_abc3(nsbmmff3) = cba
+                     stbn_cba3(nsbmmff3) = abc
+                  endif
                else if (sbt .eq. 4) then
-                  stbn_abc4(ia,ib,ic) = abc
-                  if (ic .ne. ia)  stbn_abc4(ic,ib,ia) = cba
-                  stbn_cba4(ia,ib,ic) = cba
-                  if (ic .ne. ia)  stbn_cba4(ic,ib,ia) = abc
+                  if (nsbmmff4 .gt. mmffmaxnsb) then
+                     write(iout,561)
+                     call fatal
+                  endif
+                  nsbmmff4 = nsbmmff4 + 1
+                  mmffsbabclc4(nsbmmff4) = pa//pb//pc
+                  stbn_abc4(nsbmmff4) = abc
+                  stbn_cba4(nsbmmff4) = cba
+                  if (ia .ne. ic) then
+                     nsbmmff4 = nsbmmff4 + 1
+                     mmffsbabclc4(nsbmmff4) = pc//pb//pa
+                     stbn_abc4(nsbmmff4) = cba
+                     stbn_cba4(nsbmmff4) = abc
+                  endif
                else if (sbt .eq. 5) then
-                  stbn_abc5(ia,ib,ic) = abc
-                  if (ic .ne. ia)  stbn_abc5(ic,ib,ia) = cba
-                  stbn_cba5(ia,ib,ic) = cba
-                  if (ic .ne. ia)  stbn_cba5(ic,ib,ia) = abc
+                  if (nsbmmff5 .gt. mmffmaxnsb) then
+                     write(iout,561)
+                     call fatal
+                  endif
+                  nsbmmff5 = nsbmmff5 + 1
+                  mmffsbabclc5(nsbmmff5) = pa//pb//pc
+                  stbn_abc5(nsbmmff5) = abc
+                  stbn_cba5(nsbmmff5) = cba
+                  if (ia .ne. ic) then
+                     nsbmmff5 = nsbmmff5 + 1
+                     mmffsbabclc5(nsbmmff5) = pc//pb//pa
+                     stbn_abc5(nsbmmff5) = cba
+                     stbn_cba5(nsbmmff5) = abc
+                  endif
                else if (sbt .eq. 6) then
-                  stbn_abc6(ia,ib,ic) = abc
-                  if (ic .ne. ia)  stbn_abc6(ic,ib,ia) = cba
-                  stbn_cba6(ia,ib,ic) = cba
-                  if (ic .ne. ia)  stbn_cba6(ic,ib,ia) = abc
+                  if (nsbmmff6 .gt. mmffmaxnsb) then
+                     write(iout,561)
+                     call fatal
+                  endif
+                  nsbmmff6 = nsbmmff6 + 1
+                  mmffsbabclc6(nsbmmff6) = pa//pb//pc
+                  stbn_abc6(nsbmmff6) = abc
+                  stbn_cba6(nsbmmff6) = cba
+                  if (ia .ne. ic) then
+                     nsbmmff6 = nsbmmff6 + 1
+                     mmffsbabclc6(nsbmmff6) = pc//pb//pa
+                     stbn_abc6(nsbmmff6) = cba
+                     stbn_cba6(nsbmmff6) = abc
+                  endif
                else if (sbt .eq. 7) then
-                  stbn_abc7(ia,ib,ic) = abc
-                  if (ic .ne. ia)  stbn_abc7(ic,ib,ia) = cba
-                  stbn_cba7(ia,ib,ic) = cba
-                  if (ic .ne. ia)  stbn_cba7(ic,ib,ia) = abc
+                  if (nsbmmff7 .gt. mmffmaxnsb) then
+                     write(iout,561)
+                     call fatal
+                  endif
+                  nsbmmff7 = nsbmmff7 + 1
+                  mmffsbabclc7(nsbmmff7) = pa//pb//pc
+                  stbn_abc7(nsbmmff7) = abc
+                  stbn_cba7(nsbmmff7) = cba
+                  if (ia .ne. ic) then
+                     nsbmmff7 = nsbmmff7 + 1
+                     mmffsbabclc7(nsbmmff7) = pc//pb//pa
+                     stbn_abc7(nsbmmff7) = cba
+                     stbn_cba7(nsbmmff7) = abc
+                  endif
                else if (sbt .eq. 8) then
-                  stbn_abc8(ia,ib,ic) = abc
-                  if (ic .ne. ia)  stbn_abc8(ic,ib,ia) = cba
-                  stbn_cba8(ia,ib,ic) = cba
-                  if (ic .ne. ia)  stbn_cba8(ic,ib,ia) = abc
+                  if (nsbmmff8 .gt. mmffmaxnsb) then
+                     write(iout,561)
+                     call fatal
+                  endif
+                  nsbmmff8 = nsbmmff8 + 1
+                  mmffsbabclc8(nsbmmff8) = pa//pb//pc
+                  stbn_abc8(nsbmmff8) = abc
+                  stbn_cba8(nsbmmff8) = cba
+                  if (ia .ne. ic) then
+                     nsbmmff8 = nsbmmff8 + 1
+                     mmffsbabclc8(nsbmmff8) = pc//pb//pa
+                     stbn_abc8(nsbmmff8) = cba
+                     stbn_cba8(nsbmmff8) = abc
+                  endif
                else if (sbt .eq. 9) then
-                  stbn_abc9(ia,ib,ic) = abc
-                  if (ic .ne. ia)  stbn_abc9(ic,ib,ia) = cba
-                  stbn_cba9(ia,ib,ic) = cba
-                  if (ic .ne. ia)  stbn_cba9(ic,ib,ia) = abc
+                  if (nsbmmff9 .gt. mmffmaxnsb) then
+                     write(iout,561)
+                     call fatal
+                  endif
+                  nsbmmff9 = nsbmmff9 + 1
+                  mmffsbabclc9(nsbmmff9) = pa//pb//pc
+                  stbn_abc9(nsbmmff9) = abc
+                  stbn_cba9(nsbmmff9) = cba
+                  if (ia .ne. ic) then
+                     nsbmmff9 = nsbmmff9 + 1
+                     mmffsbabclc9(nsbmmff9) = pc//pb//pa
+                     stbn_abc9(nsbmmff9) = cba
+                     stbn_cba9(nsbmmff9) = abc
+                  endif
                else if (sbt .eq. 10) then
-                  stbn_abc10(ia,ib,ic) = abc
-                  if (ic .ne. ia)  stbn_abc10(ic,ib,ia) = cba
-                  stbn_cba10(ia,ib,ic) = cba
-                  if (ic .ne. ia)  stbn_cba10(ic,ib,ia) = abc
+                  if (nsbmmff10 .gt. mmffmaxnsb) then
+                     write(iout,561)
+                     call fatal
+                  endif
+                  nsbmmff10 = nsbmmff10 + 1
+                  mmffsbabclc10(nsbmmff10) = pa//pb//pc
+                  stbn_abc10(nsbmmff10) = abc
+                  stbn_cba10(nsbmmff10) = cba
+                  if (ia .ne. ic) then
+                     nsbmmff10 = nsbmmff10 + 1
+                     mmffsbabclc10(nsbmmff10) = pc//pb//pa
+                     stbn_abc10(nsbmmff10) = cba
+                     stbn_cba10(nsbmmff10) = abc
+                  endif
                else if (sbt .eq. 11) then
-                  stbn_abc11(ia,ib,ic) = abc
-                  if (ic .ne. ia)  stbn_abc11(ic,ib,ia) = cba
-                  stbn_cba11(ia,ib,ic) = cba
-                  if (ic .ne. ia)  stbn_cba11(ic,ib,ia) = abc
+                  if (nsbmmff11 .gt. mmffmaxnsb) then
+                     write(iout,561)
+                     call fatal
+                  endif
+                  nsbmmff11 = nsbmmff11 + 1
+                  mmffsbabclc11(nsbmmff11) = pa//pb//pc
+                  stbn_abc11(nsbmmff11) = abc
+                  stbn_cba11(nsbmmff11) = cba
+                  if (ia .ne. ic) then
+                     nsbmmff11 = nsbmmff11 + 1
+                     mmffsbabclc11(nsbmmff11) = pc//pb//pa
+                     stbn_abc11(nsbmmff11) = cba
+                     stbn_cba11(nsbmmff11) = abc
+                  endif
                end if
             end if
 c
@@ -1527,6 +1821,25 @@ c
                t35(2,nt5) = st(3)
             end if
 c
+c     MMFF torsion twist empirical rule parameters
+c
+         else if (keyword(1:10) .eq. 'MMFFTORER ') then
+            ia = 0
+            an1 = 0.0d0
+            an2 = 0.0d0
+            string = record(next:120)
+            read (string,*,err=585,end=585)  ia,an1,an2
+  585       continue
+            if (ia .ge. maxele) then
+               write (iout,586) ia
+  586          format (/,' READPRM  --  Exceeding atomic number limit;',
+     &                    ' Increase MAXELE or check MMFFTORER for',
+     &                    ' atomic number = ',i4)
+               call fatal
+            endif
+            mmfftorer(ia,1) = an1
+            mmfftorer(ia,2) = an2
+c
 c     MMFF bond charge increment parameters
 c
          else if (keyword(1:8) .eq. 'MMFFBCI ') then
@@ -1642,6 +1955,420 @@ c
             else if (ie .eq. 1) then
                mmffaroma(ia,if) = ic
             end if
+c
+c           LFMM polynomial bond stretching
+c
+         else if (keyword(1:9) .eq. 'LFMMBOND ') then
+            ia = 0
+            ib = 0
+            bt = 0
+            bd = 0.0d0
+            vt = 0.0d0
+            string = record(next:120)
+            read (string,*,err=660,end=660)  ia,ib,bt,bd,(vt(j),j=1,3)
+  660       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            call numeral (bt,pc,size)
+            nstrlf = nstrlf + 1
+            if (nstrlf .gt. maxnstrlf) then
+               write (iout,661) nstrlf
+  661          format (/,' READPRM  --  Too many LFMM polynomial ',
+     &                   'bond stretch parameters (reached ',i10,
+     &                   '); Increase MAXNSTRLF')
+               call fatal
+            endif
+            if (ia .le. ib) then
+               strlfid(nstrlf) = pa//pb//pc
+            else
+               strlfid(nstrlf) = pb//pa//pc
+            end if
+            strlfeq(nstrlf) = bd
+            strlfcon(nstrlf,1) = vt(1)
+            strlfcon(nstrlf,2) = vt(2)
+            strlfcon(nstrlf,3) = vt(3)
+c
+c     LFMM polynomial angle bending
+c
+         else if (keyword(1:10) .eq. 'LFMMANGLE ') then
+            ia = 0
+            ib = 0
+            ic = 0
+            at = 0
+            an = 0.0d0
+            vt = 0.0d0
+            string = record(next:120)
+            read (string,*,err=670,end=670) ia,ib,ic,at,an,(vt(j),j=1,3)
+  670       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            call numeral (ic,pc,size)
+            call numeral (at,pd,size)
+            nanglf = nanglf + 1
+            if (nanglf .gt. maxnanglf) then
+               write (iout,671) nanglf
+  671          format (/,' READPRM  --  Too many LFMM polynomial ',
+     &                   'angle bend parameters (reached ',i10,
+     &                   '); Increase MAXNANGLF')
+               call fatal
+            endif
+            if (ia .le. ic) then
+               anglfid(nanglf) = pa//pb//pc//pd
+            else
+               anglfid(nanglf) = pc//pb//pa//pd
+            end if
+            anglfeq(nanglf) = an
+            anglfcon(nanglf,1) = vt(1)
+            anglfcon(nanglf,2) = vt(2)
+            anglfcon(nanglf,3) = vt(3)
+c
+c     LFMM polynomial torsion twist
+c
+         else if (keyword(1:9) .eq. 'LFMMTORS ') then
+            ia = 0
+            ib = 0
+            ic = 0
+            id = 0
+            at = 0
+            vt = 0.0d0
+            st = 0.0d0
+            string = record(next:120)
+            read (string,*,err=680,end=680)  ia,ib,ic,id,at,
+     &                                       (vt(j),st(j),j=1,6)
+  680       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            call numeral (ic,pc,size)
+            call numeral (id,pd,size)
+            call numeral (at,pe,size)
+            ntorlf = ntorlf + 1
+            if (ntorlf .gt. maxntorlf) then
+               write (iout,681) ntorlf
+  681          format (/,' READPRM  --  Too many LFMM polynomial ',
+     &                   'torsion twist parameters (reached ',
+     &                   i10,'); Increase MAXNTORLF')
+               call fatal
+            endif
+            if (ib .lt. ic) then
+               torlfid(ntorlf) = pa//pb//pc//pd//pe
+            else if (ic .lt. ib) then
+               torlfid(ntorlf) = pd//pc//pb//pa//pe
+            else if (ia .le. id) then
+               torlfid(ntorlf) = pa//pb//pc//pd//pe
+            else if (id .lt. ia) then
+               torlfid(ntorlf) = pd//pc//pb//pa//pe
+            end if
+            torlfcon(ntorlf,1) = vt(1)
+            torlfcon(ntorlf,2) = vt(2)
+            torlfcon(ntorlf,3) = vt(3)
+            torlfcon(ntorlf,4) = vt(4)
+            torlfcon(ntorlf,5) = vt(5)
+            torlfcon(ntorlf,6) = vt(6)
+            torlfph(ntorlf,1) = st(1)
+            torlfph(ntorlf,2) = st(2)
+            torlfph(ntorlf,3) = st(3)
+            torlfph(ntorlf,4) = st(4)
+            torlfph(ntorlf,5) = st(5)
+            torlfph(ntorlf,6) = st(6)
+c
+c     LFMM harmonic metal-ligand
+c
+         else if (keyword(1:9) .eq. 'LFMMHARM ') then
+            ia = 0
+            ib = 0
+            bd = 0.0d0
+            fc = 0.0d0
+            string = record(next:120)
+            read (string,*,err=690,end=690)  ia,ib,bd,fc
+  690       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            nhalf = nhalf + 1 
+            if (nhalf .gt. maxnhalf) then
+               write (iout,691) nhalf
+  691          format (/,' READPRM  --  Too many LFMM M-L ',
+     &                   ' harmonic parameters (reached ',
+     &                   i10,'); Increase MAXNHALF')
+               call fatal
+            endif
+            if (ia .lt. ib) then
+               halfid(nhalf) = pa//pb
+            else 
+               halfid(nhalf) = pb//pa
+            end if
+            halfeq(nhalf) = bd
+            halfcon(nhalf) = fc
+c
+c     LFMM Morse metal-ligand 
+c
+         else if (keyword(1:10) .eq. 'LFMMMORSE ') then
+            ia = 0
+            ib = 0
+            bd = 0.0d0
+            vt = 0.0d0
+            string = record(next:120)
+            read (string,*,err=700,end=700)  ia,ib,bd,(vt(j),j=1,2)
+  700       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            nmolf = nmolf + 1
+            if (nmolf .gt. maxnmolf) then
+               write (iout,701) nmolf
+  701          format (/,' READPRM  --  Too many LFMM M-L ',
+     &                   ' Morse parameters (reached ',
+     &                   i10,'); Increase MAXNMOLF')
+               call fatal
+            endif
+            if (ia .lt. ib) then
+               molfid(nmolf) = pa//pb
+            else
+               molfid(nmolf) = pb//pa
+            end if
+            molfeq(nmolf) = bd
+            molfcon(nmolf,1) = vt(1)
+            molfcon(nmolf,2) = vt(2)
+c
+c     LFMM ligand-ligand repulsion
+c
+         else if (keyword(1:10) .eq. 'LFMMLLREP ') then
+            ia = 0
+            ib = 0
+            vt = 0.0d0
+            string = record(next:120)
+            read (string,*,err=710,end=710)  ia,ib,(vt(j),j=1,2)
+  710       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            nlllf = nlllf + 1
+            if (nlllf .gt. maxnlllf) then
+               write (iout,711) nlllf
+  711          format (/,' READPRM  --  Too many LFMM ligand-ligand ',
+     &                   ' repulsion parameters (reached ',
+     &                   i10,'); Increase MAXNLLLF')
+               call fatal
+            endif
+            if (ia .lt. ib) then
+               lllfid(nlllf) = pa//pb
+            else
+               lllfid(nlllf) = pb//pa
+            end if
+            lllfcon(nlllf,1) = vt(1)
+            lllfcon(nlllf,2) = vt(2)
+c
+c     LFMM van der Waals-like ligand repulsion 
+         else if (keyword(1:10) .eq. 'LFMMVWREP ') then
+            ia = 0
+            ib = 0
+            vt = 0.0d0
+            string = record(next:120)
+            read (string,*,err=720,end=720)  ia,ib,(vt(j),j=1,3)
+  720       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            nvwlf = nvwlf + 1
+            if (nvwlf .gt. maxnvwlf) then
+               write (iout,721) nvwlf
+  721          format (/,' READPRM  --  Too many LFMM ligand-ligand ',
+     &                   ' repulsion parameters (reached ',
+     &                   i10,'); Increase MAXNVWLF')
+               call fatal
+            endif
+            if (ia .lt. ib) then
+               vwlfid(nvwlf) = pa//pb
+            else
+               vwlfid(nvwlf) = pb//pa
+            end if
+            vwlfcon(nvwlf,1) = vt(1)
+            vwlfcon(nvwlf,2) = vt(2)
+            vwlfcon(nvwlf,3) = vt(3)
+c
+c     LFMM angular overlap model: sigma
+c
+         else if (keyword(1:9) .eq. 'LFMMESIG ') then
+            ia = 0
+            ib = 0
+            do i = 1, 13
+               pl(i) = 0.0d0
+            end do
+            string = record(next:120)
+            read (string,*,err=730,end=730)  ia,ib,(pl(j),j=1,7)
+  730       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            naomsig = naomsig + 1
+            if (naomsig .gt. maxnaom) then
+               write (iout,731) naomsig
+  731          format (/,' READPRM  --  Too many LFMM parameters ',
+     &                   ' for angular overlap model (reached ',
+     &                   i10,'); Increase MAXNAOM')
+               call fatal
+            endif
+            if (ia .lt. ib) then
+               aomsigid(naomsig) = pa//pb
+            else
+               aomsigid(naomsig) = pb//pa
+            end if
+            aomsig(naomsig,1) = pl(1)
+            aomsig(naomsig,2) = pl(2)
+            aomsig(naomsig,3) = pl(3)
+            aomsig(naomsig,4) = pl(4)
+            aomsig(naomsig,5) = pl(5)
+            aomsig(naomsig,6) = pl(6)
+            aomsig(naomsig,7) = pl(7)
+c
+c     LFMM angular overlap model: pi-x
+c
+         else if (keyword(1:9) .eq. 'LFMMEPIX ') then
+            ia = 0
+            ib = 0
+            do i = 1, 13
+               pl(i) = 0.0d0
+            end do
+            string = record(next:120)
+            read (string,*,err=740,end=740)  ia,ib,(pl(j),j=1,7)
+  740       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            naompix = naompix + 1
+            if (naompix .gt. maxnaom) then
+               write (iout,731) naompix
+               call fatal
+            endif
+            if (ia .lt. ib) then
+               aompixid(naompix) = pa//pb
+            else
+               aompixid(naompix) = pb//pa
+            end if
+            aompix(naompix,1) = pl(1)
+            aompix(naompix,2) = pl(2)
+            aompix(naompix,3) = pl(3)
+            aompix(naompix,4) = pl(4)
+            aompix(naompix,5) = pl(5)
+            aompix(naompix,6) = pl(6)
+            aompix(naompix,7) = pl(7)
+c
+c     LFMM angular overlap model: pi-y
+c
+         else if (keyword(1:9) .eq. 'LFMMEPIY ') then
+            ia = 0
+            ib = 0
+            do i = 1, 13
+               pl(i) = 0.0d0
+            end do
+            string = record(next:120)
+            read (string,*,err=750,end=750)  ia,ib,(pl(j),j=1,7)
+  750       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            naompiy = naompiy + 1
+            if (naompiy .gt. maxnaom) then
+               write (iout,731) naompiy
+               call fatal
+            endif
+            if (ia .lt. ib) then
+               aompiyid(naompiy) = pa//pb
+            else
+               aompiyid(naompiy) = pb//pa
+            end if
+            aompiy(naompiy,1) = pl(1)
+            aompiy(naompiy,2) = pl(2)
+            aompiy(naompiy,3) = pl(3)
+            aompiy(naompiy,4) = pl(4)
+            aompiy(naompiy,5) = pl(5)
+            aompiy(naompiy,6) = pl(6)
+            aompiy(naompiy,7) = pl(7)
+c
+c     LFMM angular overlap model: d-s mixing
+c
+         else if (keyword(1:9) .eq. 'LFMMEXDS ') then
+            ia = 0
+            ib = 0
+            do i = 1, 13
+               pl(i) = 0.0d0
+            end do
+            string = record(next:120)
+            read (string,*,err=760,end=760)  ia,ib,(pl(j),j=1,7)
+  760       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            naomxds = naomxds + 1
+            if (naomxds .gt. maxnaom) then
+               write (iout,731) naomxds
+               call fatal
+            endif
+            if (ia .lt. ib) then
+               aomxdsid(naomxds) = pa//pb
+            else
+               aomxdsid(naomxds) = pb//pa
+            end if
+            aomxds(naomxds,1) = pl(1)
+            aomxds(naomxds,2) = pl(2)
+            aomxds(naomxds,3) = pl(3)
+            aomxds(naomxds,4) = pl(4)
+            aomxds(naomxds,5) = pl(5)
+            aomxds(naomxds,6) = pl(6)
+            aomxds(naomxds,7) = pl(7)
+c
+c     LFMM electron pairing 
+c
+         else if (keyword(1:9) .eq. 'LFMMPAIR ') then
+            ia = 0
+            ib = 0
+            do i = 1, 13
+               pl(i) = 0.0d0
+            end do
+            string = record(next:120)
+            read (string,*,err=770,end=770)  ia,ib,(pl(j),j=1,7)
+  770       continue
+            call numeral (ia,pa,size)
+            call numeral (ib,pb,size)
+            npairlf = npairlf + 1
+            if (npairlf .gt. maxnaom) then
+               write (iout,771) npairlf
+  771          format (/,' READPRM  --  Too many LFMM parameters ',
+     &                   ' for electron pairing energy (reached ',
+     &                   i10,'); Increase MAXNAOM')
+               call fatal
+            endif
+            if (ia .lt. ib) then
+               epairid(npairlf) = pa//pb
+            else
+               epairid(npairlf) = pb//pa
+            end if
+            epairpar(npairlf,1) = pl(1)
+            epairpar(npairlf,2) = pl(2)
+            epairpar(npairlf,3) = pl(3)
+            epairpar(npairlf,4) = pl(4)
+            epairpar(npairlf,5) = pl(5)
+            epairpar(npairlf,6) = pl(6)
+            epairpar(npairlf,7) = pl(7)
+c
+c     parameters for 12-10 non-bonded terms for specific atom class pairs
+c
+         else if (keyword(1:11) .eq. 'NONBND1210 ') then
+            ia = 0
+            ib = 0
+            ep = 0.0d0
+            rd = 0.0d0
+            string = record(next:120)
+            read (string,*,err=780,end=780)  ia,ib,rd,ep
+  780       continue
+            nsnb = nsnb + 1
+            if (nsnb .ge. maxnsnb) then
+               write (iout,790)
+  790          format (/,' READPRM  --  Too many 12-10 non-bonded',
+     &                   'parameters; Increase MAXNSNB')
+               call fatal
+            else if (ia.gt.maxclass .or. ib.gt.maxclass) then
+               write (iout,800)
+  800          format (/,' READPRM  --  Too high atom class for 12-10 ',
+     &                   'non-bonded parameters; Check params file')
+               call fatal
+            endif
+            kisnb(1,nsnb) = ia
+            kisnb(2,nsnb) = ib
+            krsnd(nsnb) = rd
+            kepssnb(nsnb) = ep
          end if
       end do
       return

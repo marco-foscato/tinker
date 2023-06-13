@@ -37,6 +37,13 @@ c     aes     solvation energy partitioned over atoms
 c     aelf    metal ligand field energy partitioned over atoms
 c     aeg     geometric restraint energy partitioned over atoms
 c     aex     extra energy term partitioned over atoms
+c     aelfse  lfse terms partitioned over atoms (only metals get this)
+c     aehalf  LFMM harmonic M-L bond stretch partitioned over atoms
+c     aemolf  LFMM Morse M-L bond stretch partitioned over atoms
+c     aelllf  LFMM ligand-ligand repulsion partitioned over atoms
+c     aevwlf  LFMM vdW ligand-ligand repulsion partitioned over atoms
+c     aepair  empirical electron pairing term partitioned over atoms
+c     aesnb   special 12-10 non-bonded energy partitioned over atoms
 c
 c
       real*8 aesum,aeb,aea,aeba
@@ -45,6 +52,9 @@ c
       real*8 aebt,aett,aev,aec
       real*8 aecd,aed,aem,aep,aer
       real*8 aes,aelf,aeg,aex
+      real*8 aelfse,aehalf,aemolf
+      real*8 aelllf,aevwlf,aepair
+      real*8 aesnb
       common /analyz/ aesum(maxatm),aeb(maxatm),aea(maxatm),
      &                aeba(maxatm),aeub(maxatm),aeaa(maxatm),
      &                aeopb(maxatm),aeopd(maxatm),aeid(maxatm),
@@ -53,4 +63,6 @@ c
      &                aec(maxatm),aecd(maxatm),aed(maxatm),
      &                aem(maxatm),aep(maxatm),aer(maxatm),
      &                aes(maxatm),aelf(maxatm),aeg(maxatm),
-     &                aex(maxatm)
+     &                aex(maxatm),aelfse(maxatm),aehalf(maxatm),
+     &                aemolf(maxatm),aelllf(maxatm),aevwlf(maxatm),
+     &                aepair(maxatm),aesnb(maxatm)

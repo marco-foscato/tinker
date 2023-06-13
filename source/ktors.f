@@ -203,6 +203,13 @@ c
          return
       end if
 c
+c     use special torsional parameter assignment method for MMFF-based LFMM
+c
+      if (forcefield .eq. 'MMFFLF') then
+         call ktorslfmm
+         return
+      end if
+c
 c     determine the total number of forcefield parameters
 c
       nt = maxnt
@@ -582,8 +589,8 @@ c
       integer mclass
       real*8 angle
       real*8 beta,pi_bc,n_bc
-      real*8 ub,vb,wb
-      real*8 uc,vc,wc
+      real*8 wb
+      real*8 wc
       logical done,skipring
       logical ring4,ring5
       character*4 pa,pb,pc,pd
@@ -915,44 +922,6 @@ c
             itd = class(id)
             inb = atomic(ib)
             inc = atomic(ic)
-            if (inb .eq. 6) then
-               ub = 2.0d0
-               vb = 2.12d0
-            else if (inb .eq. 7) then
-               ub = 2.0d0
-               vb = 1.5d0
-            else if (inb .eq. 8) then
-               ub = 2.0d0
-               vb = 0.2d0
-            else if (inb .eq. 14) then
-               ub = 1.25d0
-               vb = 1.22d0
-            else if (inb .eq. 15) then
-               ub = 1.25d0
-               vb = 2.4d0
-            else if (inb .eq. 16) then
-               ub = 1.25d0
-               vb = 0.49d0
-            end if
-            if (inc .eq. 6) then
-               uc = 2.0d0
-               vc = 2.12d0
-            else if (inc .eq. 7) then
-               uc = 2.0d0
-               vc = 1.5d0
-            else if (inc .eq. 8) then
-               uc = 2.0d0
-               vc = 0.2d0
-            else if (inc .eq. 14) then
-               uc = 1.25d0
-               vc = 1.22d0
-            else if (inc .eq. 15) then
-               uc = 1.25d0
-               vc = 2.4d0
-            else if (inc .eq. 16) then
-               uc = 1.25d0
-               vc = 0.49d0
-            end if
             n_bc = (crd(itb)-1) * (crd(itc)-1)
             if (inb.eq.1)  irb = 0
             if (inb.ge.3 .and. inb.le.10)  irb = 1
@@ -990,44 +959,36 @@ c
                else
                   beta = 6.0d0
                end if
-               tors1(1,i) = 0.0d0
-               tors1(2,i) = 0.0d0
-               tors2(1,i) = beta * pi_bc * sqrt(ub*uc)
-               tors2(2,i) = 180.0d0
-               tors3(1,i) = 0.0d0
-               tors3(2,i) = 0.0d0
+               call setTorsER21(i,inb,inc,beta,pi_bc)
                done = .true.
                goto 20
             else if ((mltb(itb).eq.2 .and. mltb(itc).eq.2) .or.
      &               (mltb(itc).eq.2 .and. mltb(itb).eq.2)) then
                beta = 6.0d0
                pi_bc = 1.0d0
-               tors1(1,i) = 0.0d0
-               tors1(2,i) = 0.0d0
-               tors2(1,i) = beta * pi_bc * sqrt(ub*uc)
-               tors2(2,i) = 180.0d0
-               tors3(1,i) = 0.0d0
-               tors3(2,i) = 0.0d0
+               call setTorsER21(i,inb,inc,beta,pi_bc)
                done = .true.
                goto 20
-            else if (mltb(itb).eq.2 .or. mltb(itc).eq.2) then
+c
+c Original line matches also some sp2-sp3 rotor that should be handled elsewhere (see below)
+c
+c            else if (mltb(itb).eq.2 .or. mltb(itc).eq.2) then
+c
+            else if ((mltb(itb).eq.2 .and. mltb(itc).ne.2 
+     &                  .and. .not. (crd(itc).eq.3 .and. val(itc).eq.3)
+     &                  .and. .not. (crd(itc).eq.4 .and. val(itc).eq.4)
+     &                ) .or. 
+     &                (mltb(itc).eq.2 .and. mltb(itb).ne.2 
+     &                  .and. .not. (crd(itb).eq.3 .and. val(itb).eq.3)
+     &                  .and. .not. (crd(itb).eq.4 .and. val(itb).eq.4))
+     &              ) then
                beta = 6.0d0
                pi_bc = 0.4d0
-               tors1(1,i) = 0.0d0
-               tors1(2,i) = 0.0d0
-               tors2(1,i) = beta * pi_bc * sqrt(ub*uc)
-               tors2(2,i) = 180.0d0
-               tors3(1,i) = 0.0d0
-               tors3(2,i) = 0.0d0
+               call setTorsER21(i,inb,inc,beta,pi_bc)
                done = .true.
                goto 20
             else if (crd(itb).eq.4 .and. crd(itc).eq.4) then
-               tors1(1,i) = 0.0d0
-               tors1(2,i) = 0.0d0
-               tors2(1,i) = 0.0d0
-               tors2(2,i) = 180.0d0
-               tors3(1,i) = sqrt(vb*vc) / n_bc
-               tors3(2,i) = 0.0d0
+               call setTorsER22(i,inb,inc,n_bc) 
                done = .true.
                goto 20
             else if ((crd(itb).eq.4.and.crd(itc).eq.3.and.
@@ -1044,10 +1005,19 @@ c
                tors3(2,i) = 0.0d0
                done = .true.
                goto 20
+c
+c Original line seems to contine a bug: it reports twice the same condition.
+c This was probably meant to hit the two cases with reversed indeces.
+c
+c            else if ((crd(itb).eq.4.and.crd(itc).eq.2.and.
+c     &               (val(itc).eq.3.or.mltb(itc).ne.0)) .or.
+c     &               (crd(itb).eq.4.and.crd(itc).eq.2.and.
+c     &               (val(itc).eq.3.or.mltb(itc).ne.0))) then
+c
             else if ((crd(itb).eq.4.and.crd(itc).eq.2.and.
      &               (val(itc).eq.3.or.mltb(itc).ne.0)) .or.
-     &               (crd(itb).eq.4.and.crd(itc).eq.2.and.
-     &               (val(itc).eq.3.or.mltb(itc).ne.0))) then
+     &               (crd(itc).eq.4.and.crd(itb).eq.2.and.
+     &               (val(itb).eq.3.or.mltb(itb).ne.0))) then
                tors1(1,i) = 0.0d0
                tors1(2,i) = 0.0d0
                tors2(1,i) = 0.0d0
@@ -1057,12 +1027,7 @@ c
                done = .true.
                goto 20
             else if (crd(itb).eq.4 .or. crd(itc).eq.4) then
-               tors1(1,i) = 0.0d0
-               tors1(2,i) = 0.0d0
-               tors2(1,i) = 0.0d0
-               tors2(2,i) = 180.0d0
-               tors3(1,i) = sqrt(vb*vc) / n_bc
-               tors3(2,i) = 0.0d0
+               call setTorsER22(i,inb,inc,n_bc)
                done = .true.
                goto 20
             else if (pilp(itb).eq.1 .and. pilp(itc).eq.1) then
@@ -1083,12 +1048,7 @@ c
                else if (irb.ne.1 .or. irc.ne.1) then
                   pi_bc = 0.15d0
                end if
-               tors1(1,i) = 0.0d0
-               tors1(2,i) = 0.0d0
-               tors2(1,i) = beta * pi_bc * sqrt(ub*uc)
-               tors2(2,i) = 180.0d0
-               tors3(1,i) = 0.0d0
-               tors3(2,i) = 0.0d0
+               call setTorsER21(i,inb,inc,beta,pi_bc)
                done = .true.
                goto 20
             else if (pilp(itc).ne.0 .and. mltb(itb).ne.0) then
@@ -1100,78 +1060,694 @@ c
                else if (irb.ne.1 .or. irc.ne.1) then
                   pi_bc = 0.15d0
                end if
-               tors1(1,i) = 0.0d0
-               tors1(2,i) = 0.0d0
-               tors2(1,i) = beta * pi_bc * sqrt(ub*uc)
-               tors2(2,i) = 180.0d0
-               tors3(1,i) = 0.0d0
-               tors3(2,i) = 0.0d0
+               call setTorsER21(i,inb,inc,beta,pi_bc)
                done = .true.
                goto 20
             else if ((mltb(itb).eq.1.or.mltb(itc).eq.1) .and.
      &               (inb.ne.6.or.inc.ne.6)) then
                beta = 6.0d0
                pi_bc = 0.4d0
-               tors1(1,i) = 0.0d0
-               tors1(2,i) = 0.0d0
-               tors2(1,i) = beta * pi_bc * sqrt(ub*uc)
-               tors2(2,i) = 180.0d0
-               tors3(1,i) = 0.0d0
-               tors3(2,i) = 0.0d0
+               call setTorsER21(i,inb,inc,beta,pi_bc)
                done = .true.
                goto 20
             else if (mltb(itb).ne.0 .and. mltb(itc).ne.0) then
                beta = 6.0d0
                pi_bc = 0.15d0
-               tors1(1,i) = 0.0d0
-               tors1(2,i) = 0.0d0
-               tors2(1,i) = beta * pi_bc * sqrt(ub*uc)
-               tors2(2,i) = 180.0d0
-               tors3(1,i) = 0.0d0
-               tors3(2,i) = 0.0d0
+               call setTorsER21(i,inb,inc,beta,pi_bc)
                done = .true.
                goto 20
             else if (inb.eq.8 .and. inc.eq.8) then
                wb = 2.0d0
                wc = 2.0d0
-               tors1(1,i) = 0.0d0
-               tors1(2,i) = 0.0d0
-               tors2(1,i) = -sqrt(wb*wc)
-               tors2(2,i) = 180.0d0
-               tors3(1,i) = 0.0d0
-               tors3(2,i) = 0.0d0
+               call setTorsER23(i,wb,wc)
                done = .true.
                goto 20
             else if ((inb.eq.8.and.inc.eq.16) .or.
      &               (inb.eq.16.and.inc.eq.8)) then
                wb = 2.0d0
                wc = 8.0d0
-               tors1(1,i) = 0.0d0
-               tors1(2,i) = 0.0d0
-               tors2(1,i) = -sqrt(wb*wc)
-               tors2(2,i) = 180.0d0
-               tors3(1,i) = 0.0d0
-               tors3(2,i) = 0.0d0
+               call setTorsER23(i,wb,wc)
                done = .true.
                goto 20
             else if (inb.eq.16 .and. inc.eq.16) then
                wb = 8.0d0
                wc = 8.0d0
-               tors1(1,i) = 0.0d0
-               tors1(2,i) = 0.0d0
-               tors2(1,i) = -sqrt(wb*wc)
-               tors2(2,i) = 180.0d0
-               tors3(1,i) = 0.0d0
-               tors3(2,i) = 0.0d0
+               call setTorsER23(i,wb,wc)
                done = .true.
                goto 20
             else
-               tors1(1,i) = 0.0
-               tors1(2,i) = 0.0
-               tors2(1,i) = 0.0
-               tors2(2,i) = 180.0
-               tors3(1,i) = sqrt(vb*vc) / n_bc
-               tors3(2,i) = 0.0
+               call setTorsER22(i,inb,inc,n_bc)
+               done = .true.
+               goto 20
+            end if
+         end if
+      end do
+
+c
+c     find the cosine and sine of phase angle for each torsion
+c
+      do i = 1, ntors
+         angle = tors1(2,i) / radian
+         tors1(3,i) = cos(angle)
+         tors1(4,i) = sin(angle)
+         angle = tors2(2,i) / radian
+         tors2(3,i) = cos(angle)
+         tors2(4,i) = sin(angle)
+         angle = tors3(2,i) / radian
+         tors3(3,i) = cos(angle)
+         tors3(4,i) = sin(angle)
+         angle = tors4(2,i) / radian
+         tors4(3,i) = cos(angle)
+         tors4(4,i) = sin(angle)
+         angle = tors5(2,i) / radian
+         tors5(3,i) = cos(angle)
+         tors5(4,i) = sin(angle)
+         angle = tors6(2,i) / radian
+         tors6(3,i) = cos(angle)
+         tors6(4,i) = sin(angle)
+      end do
+c
+c     turn off the torsional potential if it is not used
+c
+      if (ntors .eq. 0)  use_tors = .false.
+      return
+      end
+c
+c
+c     ####################################################################
+c     ##                                                                ##
+c     ##  subroutine ktorslfmm  --  assign MMFFLF torsional parameters  ##
+c     ##                                                                ##
+c     ####################################################################
+c
+c
+c     "ktorslfmm"  assigns torsional parameters to each torsion according
+c     to the modified Merck Molecular Force Field (MMFF)
+c     adopted by Ligand Field Molecular Mechanics (LFMM). In LFMM there can
+c     be up to the 6 terms (6-fold) per each contribution while regular
+c     MMFF involved at most a 3-fold term.
+c
+c     literature references:
+c
+c     V. J. Burton, R. J. Deeth, C. M. Kemp and P.J. Gilbert,
+c     "Molecular Mechanics for Coordination Complexes: The Impact
+c     of Adding d-Electron Stabilization Energies", Journal of
+c     American Chemical Society, 117, 8207-8415 (1995)
+c
+c
+      subroutine ktorslfmm
+      implicit none
+      include 'sizes.i'
+      include 'iounit.i'
+      include 'inform.i'
+      include 'atmtyp.i'
+      include 'atoms.i'
+      include 'ktorsn.i'
+      include 'math.i'
+      include 'merck.i'
+      include 'potent.i'
+      include 'ring.i'
+      include 'tors.i'
+      include 'klfmms.i'
+      integer i,j,k,l,m,o
+      integer size,tt
+      integer ia,ib,ic,id
+      integer ita,itb,itc,itd
+      integer inb,inc,irb,irc
+      integer itta,ittb
+      integer ittc,ittd
+      integer nt4,nt5
+      integer ab,bc,cd
+      integer mclass
+      real*8 angle
+      real*8 beta,pi_bc,n_bc
+      real*8 wb
+      real*8 wc
+      logical done,skipring
+      logical ring4,ring5
+      character*4 pa,pb,pc,pd,pe
+      character*16 pt
+      character*20 ptt,blank
+      character*60 str
+c
+c
+c     determine the total number of forcefield parameters
+c
+      blank = '                    '
+      nt5 = maxnt5
+      nt4 = maxnt4
+      do i = maxnt5, 1, -1
+         if (kt5(i) .eq. blank)  nt5 = i - 1
+      end do
+      do i = maxnt4, 1, -1
+         if (kt4(i) .eq. blank)  nt4 = i - 1
+      end do
+c
+c     assign MMFF torsional parameters for each torsional angle
+c
+      do i = 1, ntors
+         ia = itors(1,i)
+         ib = itors(2,i)
+         ic = itors(3,i)
+         id = itors(4,i)
+         itta = type(ia)
+         ittb = type(ib)
+         ittc = type(ic)
+         ittd = type(id)
+         done = .false.
+         mclass = 0
+         skipring = .false.
+   10    continue
+c
+c     determine the atom class equivalency assignments
+c
+         mclass = mclass + 1
+         if (mclass .eq. 1) then
+            ita = eqclass(itta,mclass)
+            itb = eqclass(ittb,mclass)
+            itc = eqclass(ittc,mclass)
+            itd = eqclass(ittd,mclass)
+         else if (mclass.eq.2) then
+            ita = eqclass(itta,mclass)
+            itb = eqclass(ittb,mclass)
+            itc = eqclass(ittc,mclass)
+            itd = eqclass(ittd,mclass)
+         else if (mclass.eq.3) then
+            ita = eqclass(itta,3)
+            itb = eqclass(ittb,2)
+            itc = eqclass(ittc,2)
+            itd = eqclass(ittd,5)
+         else if (mclass.eq.4) then
+            ita = eqclass(itta,5)
+            itb = eqclass(ittb,2)
+            itc = eqclass(ittc,2)
+            itd = eqclass(ittd,3)
+         else if (mclass.eq.5) then
+            ita = eqclass(itta,5)
+            itb = eqclass(ittb,2)
+            itc = eqclass(ittc,2)
+            itd = eqclass(ittd,5)
+         end if
+c
+c     construct first part of search string and zero out parameters
+c
+         size = 4
+         call numeral (ita,pa,size)
+         call numeral (itb,pb,size)
+         call numeral (itc,pc,size)
+         call numeral (itd,pd,size)
+         if (itb .lt. itc) then
+            pt = pa//pb//pc//pd
+         else if (itc .lt. itb) then
+            pt = pd//pc//pb//pa
+         else if (ita .le. itd) then
+            pt = pa//pb//pc//pd
+         else if (itd .lt. ita) then
+            pt = pd//pc//pb//pa
+         end if
+         tors1(1,i) = 0.0d0
+         tors1(2,i) = 0.0d0
+         tors2(1,i) = 0.0d0
+         tors2(2,i) = 0.0d0
+         tors3(1,i) = 0.0d0
+         tors3(2,i) = 0.0d0
+         tors4(1,i) = 0.0d0
+         tors4(2,i) = 0.0d0
+         tors5(1,i) = 0.0d0
+         tors5(2,i) = 0.0d0
+         tors6(1,i) = 0.0d0
+         tors6(2,i) = 0.0d0
+         done = .false.
+
+c
+c     set the MMFF torsion type attribution
+c
+         ab = 0
+         if (ia .le. ib) then
+            do j = 1, nlignes
+               if (ia.eq.bt_1(j,1) .and. ib.eq.bt_1(j,2)) then
+                  ab = 1
+               end if
+            end do
+         else if (ib .le. ia) then
+            do j = 1, nlignes
+               if (ib.eq.bt_1(j,1) .and. ia.eq.bt_1(j,2)) then
+                  ab = 1
+               end if
+            end do
+         end if
+         bc = 0
+         if (ib .le. ic) then
+            do j = 1, nlignes
+               if (ib.eq.bt_1(j,1) .and. ic.eq.bt_1(j,2)) then
+                  bc = 1
+               end if
+            end do
+         else if (ic .le. ib) then
+            do j = 1, nlignes
+               if (ic.eq.bt_1(j,1) .and. ib.eq.bt_1(j,2)) then
+                  bc = 1
+               end if
+            end do
+         end if
+         cd = 0
+         if (ic .le. id) then
+            do j = 1, nlignes
+               if (ic.eq.bt_1(j,1) .and. id.eq.bt_1(j,2)) then
+                  cd = 1
+               end if
+            end do
+         else if (id .le. ic) then
+            do j = 1, nlignes
+               if (id.eq.bt_1(j,1) .and. ic.eq.bt_1(j,2)) then
+                  cd = 1
+               end if
+            end do
+         end if
+c
+c     make a check for torsions inside small rings
+c
+         ring4 = .false.
+         ring5 = .false.
+         do j = 1, nring4
+            do k = 1, 4
+               if (ia .eq. iring4(k,j)) then
+                  do l = 1, 4
+                     if (ib .eq. iring4(l,j)) then
+                        do m = 1, 4
+                           if (ic .eq. iring4(m,j)) then
+                              do o = 1, 4
+                                 if (id .eq. iring4(o,j))
+     &                              ring4 = .true.
+                              end do
+                           end if
+                        end do
+                     end if
+                  end do
+               end if
+            end do
+         end do
+         do j = 1, nring5
+            do k = 1, 5
+               if (ia .eq. iring5(k,j)) then
+                  do l = 1, 5
+                     if (ib .eq. iring5(l,j)) then
+                        do m = 1, 5
+                           if (ic .eq. iring5(m,j)) then
+                              do o = 1, 5
+                                 if (id .eq. iring5(o,j))
+     &                              ring5 = .true.
+                              end do
+                           end if
+                        end do
+                     end if
+                  end do
+               end if
+            end do
+         end do
+         if (skipring) then
+            ring4 = .false.
+            ring5 = .false.
+         end if
+         if (ring4) then
+            tt = 4
+            call numeral (tt,pe,size)
+            ptt = pt//pe
+            call getTorsParam(i,ptt,done)
+            if (done) goto 20
+            if (.not.done .and. mclass.lt.5) then
+               goto 10
+            end if
+         end if
+         if (ring5 .and. (class(ia).eq.1.or.class(ib).eq.1.or.
+     &                    class(ic).eq.1.or.class(id).eq.1)) then
+            tt = 5
+            call numeral (tt,pe,size)
+            ptt = pt//pe
+            call getTorsParam(i,ptt,done)
+            if (.not.done .and. mclass.lt.5) then
+               goto 10
+            else if (.not.done .and. mclass.eq.5) then
+               mclass = 0
+               skipring = .true.
+               goto 10
+            end if
+         end if
+c
+c     condition below deduced from validation suite comparison
+c
+         if ((ab.eq.1 .and. (mltb(class(ic)).eq.0.or.
+     &                       sbmb(class(ic)).eq.0)) .or.
+     &       (cd.eq.1 .and. (mltb(class(ib)).eq.0.or.
+     &                       sbmb(class(ib)).eq.0))) then
+            tt = 2
+            call numeral (tt,pe,size)
+            ptt = pt//pe
+            call getTorsParam(i,ptt,done)
+            if (done) goto 20
+            if (.not.done .and. mclass.lt.5) then
+               goto 10
+            end if
+            if (.not.done .and. mclass.eq.5) then
+               tt = 0
+               call numeral (tt,pe,size)
+               ptt = pt//pe
+               call getTorsParam(i,ptt,done)
+               if (done) goto 20
+               if (.not.done .and. mclass.lt.5) then
+                  goto 10
+               end if
+            end if
+            if (tors1(1,i) .eq. 1000.0d0)  done = .false.
+            if (tors1(2,i) .eq. 1000.0d0)  done = .false.
+            if (tors2(1,i) .eq. 1000.0d0)  done = .false.
+            if (tors2(2,i) .eq. 1000.0d0)  done = .false.
+            if (tors3(1,i) .eq. 1000.0d0)  done = .false.
+            if (tors3(2,i) .eq. 1000.0d0)  done = .false.
+            goto 20
+         else if (bc .eq. 1) then
+            tt = 1
+            call numeral (tt,pe,size)
+            ptt = pt//pe
+            call getTorsParam(i,ptt,done)
+            if (done) goto 20
+            if (.not.done .and. mclass.lt.5) then
+               goto 10
+            end if
+            if (tors1(1,i) .eq. 1000.0d0)  done = .false.
+            if (tors1(2,i) .eq. 1000.0d0)  done = .false.
+            if (tors2(1,i) .eq. 1000.0d0)  done = .false.
+            if (tors2(2,i) .eq. 1000.0d0)  done = .false.
+            if (tors3(1,i) .eq. 1000.0d0)  done = .false.
+            if (tors3(2,i) .eq. 1000.0d0)  done = .false.
+            goto 20
+         else if (.not. done) then
+            tt = 0
+            call numeral (tt,pe,size)
+            ptt = pt//pe
+            call getTorsParam(i,ptt,done)
+            if (done) goto 20
+            if (.not.done .and. mclass.lt.5) then
+               goto 10
+            end if
+            if (tors1(1,i) .eq. 1000.0d0)  done = .false.
+            if (tors1(2,i) .eq. 1000.0d0)  done = .false.
+            if (tors2(1,i) .eq. 1000.0d0)  done = .false.
+            if (tors2(2,i) .eq. 1000.0d0)  done = .false.
+            if (tors3(1,i) .eq. 1000.0d0)  done = .false.
+            if (tors3(2,i) .eq. 1000.0d0)  done = .false.
+            goto 20
+         end if
+   20    continue
+c
+c     use the empirical rules for parameter not located
+c
+         if (.not. done) then
+            ita = class(ia)
+            itb = class(ib)
+            itc = class(ic)
+            itd = class(id)
+            inb = atomic(ib)
+            inc = atomic(ic)
+            n_bc = (crd(itb)-1) * (crd(itc)-1)
+            if (inb.eq.1)  irb = 0
+            if (inb.ge.3 .and. inb.le.10)  irb = 1
+            if (inb.ge.11 .and. inb.le.18)  irb = 2
+            if (inb.ge.19 .and. inb.le.36)  irb = 3
+            if (inb.ge.37 .and. inb.le.54)  irb = 4
+            if (inc.eq.1)  irc = 0
+            if (inc.ge.3 .and. inc.le.10)  irc = 1
+            if (inc.ge.11 .and. inc.le.18)  irc = 2
+            if (inc.ge.19 .and. inc.le.36)  irc = 3
+            if (inc.ge.37 .and. inc.le.54)  irc = 4
+            if (lin(itb).eq.1 .or. lin(itc).eq.1) then
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' J and K are linear (A)'
+  21              format (/,' KTORS  --  Empiric torsion rule for ',
+     &                    ' atoms(classes) ',a,/,' Rule type: ',a)
+               endif
+               tors1(1,i) = 0.0d0
+               tors1(2,i) = 0.0d0
+               tors2(1,i) = 0.0d0
+               tors2(2,i) = 0.0d0
+               tors3(1,i) = 0.0d0
+               tors3(2,i) = 0.0d0
+               tors4(1,i) = 0.0d0
+               tors4(2,i) = 0.0d0
+               tors5(1,i) = 0.0d0
+               tors5(2,i) = 0.0d0
+               tors6(1,i) = 0.0d0
+               tors6(2,i) = 0.0d0
+               done = .true.
+               goto 20
+            else if (arom(itb).eq.1 .and. arom(itc).eq.1) then
+               if (pilp(itb).eq.0 .and. pilp(itc).eq.0) then
+                  pi_bc = 0.5d0
+               else
+                  pi_bc = 0.3d0
+               end if
+               if ((val(itb).eq.3.and.val(itc).eq.4) .or.
+     &             (val(itb).eq.4.and.val(itc).eq.3) .or.
+     &             (val(itb).eq.4.and.val(itc).eq.34) .or.
+     &             (val(itb).eq.34.and.val(itc).eq.4) .or.
+     &             (val(itb).eq.34.and.val(itc).eq.3) .or.
+     &             (val(itb).eq.3.and.val(itc).eq.34) .or.
+     &             (val(itb).eq.34.and.val(itc).eq.34)) then
+                  beta = 3.0d0
+               else
+                  beta = 6.0d0
+               end if
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' J and K aromatic (B)'
+                  write(iout,*) 'pi_bc: ',pi_bc,' beta: ',beta
+               endif
+               call setTorsER21(i,inb,inc,beta,pi_bc)
+               done = .true.
+               goto 20
+            else if (mltb(itb).eq.2 .and. mltb(itc).eq.2) then
+               beta = 6.0d0
+               pi_bc = 1.0d0
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' double bond (J and K have mltb=2; C)'
+               endif
+               call setTorsER21(i,inb,inc,beta,pi_bc)
+               done = .true.
+               goto 20
+c original line matches also some sp2-sp3 rotor that should be handled elsewhere (see below)
+c
+c            else if (mltb(itb).eq.2 .or. mltb(itc).eq.2) then
+c
+            else if ((mltb(itb).eq.2 .and. mltb(itc).ne.2 
+     &                  .and. .not. (crd(itc).eq.3 .and. val(itc).eq.3)
+     &                  .and. .not. (crd(itc).eq.4 .and. val(itc).eq.4)
+     &                ) .or. 
+     &                (mltb(itc).eq.2 .and. mltb(itb).ne.2 
+     &                  .and. .not. (crd(itb).eq.3 .and. val(itb).eq.3)
+     &                  .and. .not. (crd(itb).eq.4 .and. val(itb).eq.4))
+     &              ) then
+               beta = 6.0d0
+               pi_bc = 0.4d0
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' double bond (only one mltb=2; C2)'
+               endif
+               call setTorsER21(i,inb,inc,beta,pi_bc)
+               done = .true.
+               goto 20
+            else if (crd(itb).eq.4 .and. crd(itc).eq.4) then
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' J and K 4-coord. (D)'
+               endif
+               call setTorsER22(i,inb,inc,n_bc)
+               done = .true.
+               goto 20
+            else if ((crd(itb).eq.4.and.crd(itc).eq.3.and.
+     &              ((val(itc).eq.4.or.val(itc).eq.34).or.
+     &                 mltb(itc).ne.0)) .or.
+     &              (crd(itc).eq.4.and.crd(itb).eq.3.and.
+     &              ((val(itb).eq.4.or.val(itb).eq.34).or.
+     &                 mltb(itb).ne.0))) then
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' sp3-sp2 rotor (E1)'
+               endif
+               tors1(2,i) = 0.0d0
+               tors2(1,i) = 0.0d0
+               tors2(2,i) = 0.0d0
+               tors3(1,i) = 0.0d0
+               tors3(2,i) = 0.0d0
+               tors4(1,i) = 0.0d0
+               tors4(2,i) = 0.0d0
+               tors5(1,i) = 0.0d0
+               tors5(2,i) = 0.0d0
+               tors6(1,i) = 0.0d0
+               tors6(2,i) = 0.0d0
+               done = .true.
+               goto 20
+c Original line seems to contine a bug: it reports twice the same condition.
+c This live was probably meant to hit the two cases with reversed indeces.
+c
+c            else if ((crd(itb).eq.4.and.crd(itc).eq.2.and.
+c     &               (val(itc).eq.3.or.mltb(itc).ne.0)) .or.
+c     &               (crd(itb).eq.4.and.crd(itc).eq.2.and.
+c     &               (val(itc).eq.3.or.mltb(itc).ne.0))) then
+c
+            else if ((crd(itb).eq.4.and.crd(itc).eq.2.and.
+     &               (val(itc).eq.3.or.mltb(itc).ne.0)) .or.
+     &               (crd(itc).eq.4.and.crd(itb).eq.2.and.
+     &               (val(itb).eq.3.or.mltb(itb).ne.0))) then
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' sp3-sp2 rotor (E2)'
+               endif
+               tors1(2,i) = 0.0d0
+               tors2(1,i) = 0.0d0
+               tors2(2,i) = 0.0d0
+               tors3(1,i) = 0.0d0
+               tors3(2,i) = 0.0d0
+               tors4(1,i) = 0.0d0
+               tors4(2,i) = 0.0d0
+               tors5(1,i) = 0.0d0
+               tors5(2,i) = 0.0d0
+               tors6(1,i) = 0.0d0
+               tors6(2,i) = 0.0d0
+               done = .true.
+               goto 20
+            else if (crd(itb).eq.4 .or. crd(itc).eq.4) then
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' 3- and 4-coord. (E3)'
+               endif
+               call setTorsER22(i,inb,inc,n_bc)
+               done = .true.
+               goto 20
+            else if (pilp(itb).eq.1 .and. pilp(itc).eq.1) then
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' not resonant (G1) '
+               endif  
+               tors1(2,i) = 0.0d0
+               tors2(1,i) = 0.0d0
+               tors2(2,i) = 0.0d0
+               tors3(1,i) = 0.0d0
+               tors3(2,i) = 0.0d0
+               tors4(1,i) = 0.0d0
+               tors4(2,i) = 0.0d0
+               tors5(1,i) = 0.0d0
+               tors5(2,i) = 0.0d0
+               tors6(1,i) = 0.0d0
+               tors6(2,i) = 0.0d0
+               done = .true.
+               goto 20
+            else if (pilp(itb).ne.0 .and. mltb(itc).ne.0) then
+               beta = 6.0d0
+               if (mltb(itb) .eq. 1) then
+                  pi_bc = 0.5d0
+               else if (irb.eq.1 .and. irc.eq.1) then
+                  pi_bc = 0.3d0
+               else if (irb.ne.1 .or. irc.ne.1) then
+                  pi_bc = 0.15d0
+               end if
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' pi-bond not zero (G2)'
+               endif
+               call setTorsER21(i,inb,inc,beta,pi_bc)
+               done = .true.
+               goto 20
+            else if (pilp(itc).ne.0 .and. mltb(itb).ne.0) then
+               beta = 6.0d0
+               if (mltb(itc) .eq. 1) then
+                  pi_bc = 0.5d0
+               else if (irb.eq.1 .and. irc.eq.1) then
+                  pi_bc = 0.3d0
+               else if (irb.ne.1 .or. irc.ne.1) then
+                  pi_bc = 0.15d0
+               end if
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' pi-bond not zero (G3)'
+               endif
+               call setTorsER21(i,inb,inc,beta,pi_bc)
+               done = .true.
+               goto 20
+            else if ((mltb(itb).eq.1.or.mltb(itc).eq.1) .and.
+     &               (inb.ne.6.or.inc.ne.6)) then
+               beta = 6.0d0
+               pi_bc = 0.4d0
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' pi-bond not zero (G4)'
+               endif
+               call setTorsER21(i,inb,inc,beta,pi_bc)
+               done = .true.
+               goto 20
+            else if (mltb(itb).ne.0 .and. mltb(itc).ne.0) then
+               beta = 6.0d0
+               pi_bc = 0.15d0
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' pi-bond not zero (G5)'
+               endif
+               call setTorsER21(i,inb,inc,beta,pi_bc)
+               done = .true.
+               goto 20
+            else if (inb.eq.8 .and. inc.eq.8) then
+               wb = 2.0d0
+               wc = 2.0d0
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     6                           ' O-O bond (H)'
+               endif
+               call setTorsER23(i,wb,wc)
+               done = .true.
+               goto 20
+            else if ((inb.eq.8.and.inc.eq.16) .or.
+     &               (inb.eq.16.and.inc.eq.8)) then
+               wb = 2.0d0
+               wc = 8.0d0
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),' O-S bond (H)'
+               endif               
+               call setTorsER23(i,wb,wc)
+               done = .true.
+               goto 20
+            else if (inb.eq.16 .and. inc.eq.16) then
+               wb = 8.0d0
+               wc = 8.0d0
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),' S-S bond (H)'
+               endif
+               call setTorsER23(i,wb,wc)
+               done = .true.
+               goto 20
+            else
+               if (debug) then
+                  call buildTorStr(ia,ib,ic,id,str)
+                  write(iout,21) trim(adjustl(str)),
+     &                           ' unspecified case (H)'
+               endif
+               call setTorsER22(i,inb,inc,n_bc)
                done = .true.
                goto 20
             end if
@@ -1206,3 +1782,286 @@ c
       if (ntors .eq. 0)  use_tors = .false.
       return
       end
+c
+c
+c
+c     ####################################################################
+c     ##                                                                ##
+c     ##  getTorsParam  --  look for torsional parameters from FF file  ##
+c     ##                                                                ##
+c     ####################################################################
+c
+c
+c     "getTorsParam" searches for the identification string in the list
+c     of torsional parameters provided. The identification string contains the
+c     four atom classes anf the torsion type (4+4+4+4+4 = 20 chars).
+c
+c     i     torsion index
+c     ptt   torsion type identification string: the four atom classes and the
+c           type of torsion parameter (4+4+4+4+4 = 20 chars).
+c     done  boolean flag: is .true. if the parameter is found and assigned
+c
+c
+      subroutine getTorsParam(i,ptt,done)
+      implicit none
+      include 'sizes.i'
+      include 'tors.i'
+      include 'klfmms.i'      
+      integer i,j
+      character*20 ptt
+      logical done
+
+      done = .false.
+      do j = 1, maxntorlf
+         if (torlfid(j) .eq. ptt) then
+            tors1(1,i) = torlfcon(j,1)
+            tors1(2,i) = torlfph(j,1)
+            tors2(1,i) = torlfcon(j,2)
+            tors2(2,i) = torlfph(j,2)
+            tors3(1,i) = torlfcon(j,3)
+            tors3(2,i) = torlfph(j,3)
+            tors4(1,i) = torlfcon(j,4)
+            tors4(2,i) = torlfph(j,4)
+            tors5(1,i) = torlfcon(j,5)
+            tors5(2,i) = torlfph(j,5)
+            tors6(1,i) = torlfcon(j,6)
+            tors6(2,i) = torlfph(j,6)
+            done = .true.
+         end if
+      end do
+      end
+c
+c
+c
+c     #######################################################################
+c     ##                                                                   ##
+c     ##  setTorsER21  --  apply MMFF empiric rule as from eq. 21 in ref.  ##
+c     ##                                                                   ##
+c     #######################################################################
+c
+c
+c     literature reference:
+c
+c     T. A. Halgren, "Merck Molecular Force Field. V. Extension of
+c     MMFF94 Using Experimental Data, Additional Computational Data,
+c     and Empirical Rules", Journal of Computational Chemistry, 17,
+c     616-641 (1995)
+c
+c
+      subroutine setTorsER21(i,inb,inc,beta,pi_bc)
+      implicit none
+      include 'sizes.i'
+      include 'tors.i'
+      include 'klfmms.i'
+      include 'merck.i'
+      include 'iounit.i'
+      integer i
+      integer inb,inc
+      real*8 beta,pi_bc
+
+      if (mmfftorer(inb,1) .eq. 1000.0d0) then
+         write(iout,10) inb
+  10     format (/,' KTORS  --  Parameters for empirical'
+     &           ' torsion rule not found for atomic number',i4,
+     &           /,' Setting force constant to zero.')
+         tors1(1,i) = 0.0d0
+         tors1(2,i) = 0.0d0
+         tors2(1,i) = 0.0d0
+         tors2(2,i) = 0.0d0
+         tors3(1,i) = 0.0d0
+         tors3(2,i) = 0.0d0
+         tors4(1,i) = 0.0d0
+         tors4(2,i) = 0.0d0
+         tors5(1,i) = 0.0d0
+         tors5(2,i) = 0.0d0
+         tors6(1,i) = 0.0d0
+         tors6(2,i) = 0.0d0
+c        call fatal
+      else if (mmfftorer(inc,1) .eq. 1000.0d0) then
+         write(iout,10) inc
+         tors1(1,i) = 0.0d0
+         tors1(2,i) = 0.0d0
+         tors2(1,i) = 0.0d0
+         tors2(2,i) = 0.0d0
+         tors3(1,i) = 0.0d0
+         tors3(2,i) = 0.0d0
+         tors4(1,i) = 0.0d0
+         tors4(2,i) = 0.0d0
+         tors5(1,i) = 0.0d0
+         tors5(2,i) = 0.0d0
+         tors6(1,i) = 0.0d0
+         tors6(2,i) = 0.0d0
+c        call fatal
+      else
+         tors1(1,i) = 0.0d0
+         tors1(2,i) = 0.0d0
+         tors2(1,i) = beta * pi_bc *
+     &                sqrt(mmfftorer(inb,1) * mmfftorer(inc,1))
+         tors2(2,i) = 180.0d0
+         tors3(1,i) = 0.0d0
+         tors3(2,i) = 0.0d0
+         tors4(1,i) = 0.0d0
+         tors4(2,i) = 0.0d0
+         tors5(1,i) = 0.0d0
+         tors5(2,i) = 0.0d0
+         tors6(1,i) = 0.0d0
+         tors6(2,i) = 0.0d0
+      endif
+      end
+c
+c
+c
+c     #######################################################################
+c     ##                                                                   ##
+c     ##  setTorsER22  --  apply MMFF empiric rule as from eq. 22 in ref.  ##
+c     ##                                                                   ##
+c     #######################################################################
+c
+c
+c     literature reference:
+c
+c     T. A. Halgren, "Merck Molecular Force Field. V. Extension of
+c     MMFF94 Using Experimental Data, Additional Computational Data,
+c     and Empirical Rules", Journal of Computational Chemistry, 17,
+c     616-641 (1995)
+c
+c
+      subroutine setTorsER22(i,inb,inc,n_bc)
+      implicit none
+      include 'sizes.i'
+      include 'tors.i'
+      include 'klfmms.i'
+      include 'merck.i'
+      include 'iounit.i'
+      integer i
+      integer inb,inc
+      real*8 n_bc
+
+      if (mmfftorer(inb,2) .eq. 1000.0d0) then
+         write(iout,10) inb
+  10     format (/,' KTORS  --  Parameters for empirical'
+     &           ' torsion rule not found for atomic number',i4,
+     &           /,' Setting force constant to zero.')
+         tors1(1,i) = 0.0d0
+         tors1(2,i) = 0.0d0
+         tors2(1,i) = 0.0d0
+         tors2(2,i) = 0.0d0
+         tors3(1,i) = 0.0d0
+         tors3(2,i) = 0.0d0
+         tors4(1,i) = 0.0d0
+         tors4(2,i) = 0.0d0
+         tors5(1,i) = 0.0d0
+         tors5(2,i) = 0.0d0
+         tors6(1,i) = 0.0d0
+         tors6(2,i) = 0.0d0
+c        call fatal
+      else if (mmfftorer(inc,2) .eq. 1000.0d0) then
+         write(iout,10) inc
+         tors1(1,i) = 0.0d0
+         tors1(2,i) = 0.0d0
+         tors2(1,i) = 0.0d0
+         tors2(2,i) = 0.0d0
+         tors3(1,i) = 0.0d0
+         tors3(2,i) = 0.0d0
+         tors4(1,i) = 0.0d0
+         tors4(2,i) = 0.0d0
+         tors5(1,i) = 0.0d0
+         tors5(2,i) = 0.0d0
+         tors6(1,i) = 0.0d0
+         tors6(2,i) = 0.0d0
+c        call fatal
+      else
+         tors1(1,i) = 0.0d0
+         tors1(2,i) = 0.0d0
+         tors2(1,i) = 0.0d0
+         tors2(2,i) = 180.0d0
+         tors3(1,i) = sqrt(mmfftorer(inb,2) * mmfftorer(inc,2))
+     &                / n_bc
+         tors3(2,i) = 0.0d0
+         tors4(1,i) = 0.0d0
+         tors4(2,i) = 0.0d0
+         tors5(1,i) = 0.0d0
+         tors5(2,i) = 0.0d0
+         tors6(1,i) = 0.0d0
+         tors6(2,i) = 0.0d0
+      endif
+      end
+c
+c
+c
+c     #######################################################################
+c     ##                                                                   ##
+c     ##  setTorsER23  --  apply MMFF empiric rule as from eq. 23 in ref.  ##
+c     ##                                                                   ##
+c     #######################################################################
+c
+c
+c     literature reference:
+c
+c     T. A. Halgren, "Merck Molecular Force Field. V. Extension of
+c     MMFF94 Using Experimental Data, Additional Computational Data,
+c     and Empirical Rules", Journal of Computational Chemistry, 17,
+c     616-641 (1995)
+c
+c
+      subroutine setTorsER23(i,wb,wc)
+      implicit none
+      include 'sizes.i'
+      include 'tors.i'
+      include 'klfmms.i'
+      include 'merck.i'
+      include 'iounit.i'
+      integer i
+      real*8 wb,wc
+
+      tors1(1,i) = 0.0d0
+      tors1(2,i) = 0.0d0
+      tors2(1,i) = -sqrt(wb*wc)
+      tors2(2,i) = 180.0d0
+      tors3(1,i) = 0.0d0
+      tors3(2,i) = 0.0d0
+      tors4(1,i) = 0.0d0
+      tors4(2,i) = 0.0d0
+      tors5(1,i) = 0.0d0
+      tors5(2,i) = 0.0d0
+      tors6(1,i) = 0.0d0
+      tors6(2,i) = 0.0d0
+
+      end subroutine
+c
+c
+c     ################################################################
+c     ##                                                            ##
+c     ##  buildTorStr  --  creates a string representing a torsion  ##
+c     ##                                                            ##
+c     ################################################################
+c
+c     "buildTorStr" prepares a string for human readable, quick 
+c     identification of a torsion. The string reports both atom indexes 
+c     and classes.
+c
+c
+      subroutine  buildTorStr(ia,ib,ic,id,string)
+      implicit none
+      include 'sizes.i'
+      include 'atmtyp.i'
+      integer ia,ib,ic,id
+      character*6 pa,pb,pc,pd
+      character*6 ca,cb,cc,cd
+      character*60 string
+
+      write(pa,'(I6)') ia
+      write(pb,'(I6)') ib
+      write(pc,'(I6)') ic
+      write(pd,'(I6)') id
+      write(ca,'(I6)') class(ia)
+      write(cb,'(I6)') class(ib)
+      write(cc,'(I6)') class(ic)
+      write(cd,'(I6)') class(id)
+
+      string = trim(adjustl(pa))//'('//trim(adjustl(ca))//')-'
+     &       //trim(adjustl(pb))//'('//trim(adjustl(cb))//')-'
+     &       //trim(adjustl(pc))//'('//trim(adjustl(cc))//')-'
+     &       //trim(adjustl(pd))//'('//trim(adjustl(cd))//') '
+      return
+      end subroutine

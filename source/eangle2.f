@@ -299,6 +299,19 @@ c
                      sine = sin((fold*angle-ideal)/radian)
                      deddt = -factor * force * sine
                      d2eddt2 = -factor * force * fold * cosine
+                  else if (angtyp(i) .eq. 'POLYNOME') then
+                     dt = angle - ideal
+                     dt2 = dt * dt
+                     dt3 = dt2 * dt
+                     dt4 = dt2 * dt2
+                     deddt = 2.0d0 * angunit * radian *
+     &                                   ( akpoly(i,1) * dt +
+     &                             1.5d0 * akpoly(i,2) * cang * dt2 +
+     &                             2.0d0 * akpoly(i,3) * qang * dt3 )
+                     d2eddt2 = 2 * angunit * radian**2 *
+     &                               ( akpoly(i,1) +
+     &                         3.0d0 * akpoly(i,2) * cang * dt +
+     &                         6.0d0 * akpoly(i,3) * qang* qang  * dt2 )
                   end if
 c
 c     scale the interaction based on its group membership
@@ -748,9 +761,16 @@ c
          dt2 = dt * dt
          dt3 = dt2 * dt
          dt4 = dt2 * dt2
-         deddt = angunit * force * dt * radian
+         if (angtyp(i) .eq. 'POLYNOME') then
+            deddt = 2.0d0 * angunit * radian *
+     &                          ( akpoly(i,1) * dt +
+     &                    1.5d0 * akpoly(i,2) * cang * dt2 +
+     &                    2.0d0 * akpoly(i,3) * qang * dt3 )
+         else
+            deddt = angunit * force * dt * radian
      &             * (2.0d0 + 3.0d0*cang*dt + 4.0d0*qang*dt2
      &                  + 5.0d0*pang*dt3 + 6.0d0*sang*dt4)
+         endif
 c
 c     chain rule terms for first derivative components
 c

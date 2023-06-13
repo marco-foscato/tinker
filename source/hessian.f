@@ -33,6 +33,7 @@ c
       include 'usage.i'
       include 'vdw.i'
       include 'vdwpot.i'
+      include 'lfmmset.i'
       integer i,j,k
       integer ii,nhess
       integer hindex(*)
@@ -58,6 +59,10 @@ c
             hdiag(j,i) = 0.0d0
          end do
       end do
+c
+c     update stored LFMM lfse contributions to Hessian
+c
+      if (use_lfmmlfs)  updtlfshess = .true.
 c
 c     maintain any periodic boundary conditions
 c
@@ -150,6 +155,7 @@ c
                   call egauss2 (i,xred,yred,zred)
                end if
             end if
+            if (use_snb) call esnbnd2 (i,xred,yred,zred)
 c
 c     call the electrostatic Hessian component routines
 c
@@ -165,6 +171,12 @@ c
             if (use_metal)  call emetal2 (i)
             if (use_geom)  call egeom2 (i)
             if (use_extra)  call extra2 (i)
+            if (use_lfmmhar)  call harm4lfmm2 (i)
+            if (use_lfmmmor)  call morse4lfmm2 (i)
+            if (use_lfmmvwl)  call vdw4lfmm2 (i)
+            if (use_lfmmllr)  call ll4lfmm2 (i)
+            if (use_lfmmelp)  call pair4lfmm2 (i)
+            if (use_lfmmlfs)  call lfse4lfmm2 (i)
 c
 c     set the diagonal Hessian matrix elements
 c

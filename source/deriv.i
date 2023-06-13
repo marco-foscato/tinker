@@ -37,6 +37,13 @@ c     des     solvation Cartesian coordinate derivatives
 c     delf    metal ligand field Cartesian coordinate derivatives
 c     deg     geometric restraint Cartesian coordinate derivatives
 c     dex     extra energy term Cartesian coordinate derivatives
+c     dehalf  LFMM-harmonic stretch Cartesian coordinate derivatives
+c     demolf  LFMM-Morse stretch Cartesian coordinate derivatives
+c     delllf  LFMM Ligand-Ligand l-l repulsion Cartesian coordinate derivatives
+c     devwlf  LFMM-Lennard-Jones-like stretch Cartesian coordinate derivatives
+c     depair  empirical electron pairing Cartesian coordinate derivatives
+c     delfse  lignad field stabilization energy Cartesian coordinate derivatives
+c     desnb   special 12-10 non-bonded energy Cartesian coordinate derivatives
 c
 c
       real*8 desum,deb,dea,deba
@@ -45,6 +52,8 @@ c
       real*8 debt,dett,dev,dec
       real*8 decd,ded,dem,dep,der
       real*8 des,delf,deg,dex
+      real*8 dehalf,demolf,delllf
+      real*8 devwlf,depair,delfse,desnb
       common /deriv/ desum(3,maxatm),deb(3,maxatm),dea(3,maxatm),
      &               deba(3,maxatm),deub(3,maxatm),deaa(3,maxatm),
      &               deopb(3,maxatm),deopd(3,maxatm),deid(3,maxatm),
@@ -53,4 +62,7 @@ c
      &               dec(3,maxatm),decd(3,maxatm),ded(3,maxatm),
      &               dem(3,maxatm),dep(3,maxatm),der(3,maxatm),
      &               des(3,maxatm),delf(3,maxatm),deg(3,maxatm),
-     &               dex(3,maxatm)
+     &               dex(3,maxatm),dehalf(3,maxatm),
+     &               demolf(3,maxatm),delllf(3,maxatm),
+     &               devwlf(3,maxatm),depair(3,maxatm),
+     &               delfse(3,maxatm),desnb(3,maxatm)

@@ -34,7 +34,7 @@ c
       integer i,ia,ib
       real*8 e,ideal,force
       real*8 expterm,bde
-      real*8 dt,dt2,fgrp
+      real*8 dt,dt2,dt3,dt4,fgrp
       real*8 xab,yab,zab,rab
       logical proceed
       logical header,huge
@@ -88,6 +88,13 @@ c
                expterm = exp(-2.0d0*dt)
                bde = 0.25d0 * bndunit * force
                e = bde * (1.0d0-expterm)**2
+            else if (bndtyp .eq. 'POLYNOME') then
+               dt2 = dt * dt
+               dt3 = dt2 * dt
+               dt4 = dt2 * dt2
+               e = bndunit * ( bkpoly(i,1) * dt2 +
+     &                         bkpoly(i,2) * cbnd * dt3 +
+     &                         bkpoly(i,3) * qbnd * dt4 )
             end if
 c
 c     scale the interaction based on its group membership

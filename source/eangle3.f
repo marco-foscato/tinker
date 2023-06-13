@@ -140,6 +140,14 @@ c
                      factor = 2.0d0 * angunit * (radian/fold)**2
                      cosine = cos((fold*angle-ideal)/radian)
                      e = factor * force * (1.0d0+cosine)
+                  else if (angtyp(i) .eq. 'POLYNOME') then
+                     dt = angle - ideal
+                     dt2 = dt * dt
+                     dt3 = dt2 * dt
+                     dt4 = dt2 * dt2
+                     e = angunit * ( akpoly(i,1) * dt2 +
+     &                               akpoly(i,2) * cang * dt3 +
+     &                               akpoly(i,3) * qang * dt4 )
                   end if
 c
 c     scale the interaction based on its group membership
@@ -229,8 +237,14 @@ c
                   dt2 = dt * dt
                   dt3 = dt2 * dt
                   dt4 = dt2 * dt2
-                  e = angunit * force * dt2
+                  if (angtyp(i) .eq. 'POLYNOME') then
+                     e = angunit * ( akpoly(i,1) * dt2 +
+     &                               akpoly(i,2) * cang * dt3 +
+     &                               akpoly(i,3) * qang * dt4 )
+                  else
+                     e = angunit * force * dt2
      &                   * (1.0d0+cang*dt+qang*dt2+pang*dt3+sang*dt4)
+                  endif
 c
 c     scale the interaction based on its group membership
 c

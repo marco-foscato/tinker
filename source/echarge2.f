@@ -21,8 +21,25 @@ c
       include 'sizes.i'
       include 'cutoff.i'
       include 'warp.i'
+      include 'chgpot.i'
+      include 'iounit.i'
       integer i
 c
+c
+c     check settings
+c
+      if (tapertype.ne.1 .or. rdepdielec) then
+         if (use_smooth .or. use_ewald .or. use_clist
+     &       .or. use_lights) then
+            write (iout,10)
+   10       format (/,' ECHARGE2  --  Distance-dependent dielectric '
+     &              'form for charge-charge interaction and '
+     &              'tapering type>1 are implemented only for '
+     &              'pairwise double loop. Cannot apply smoothing, '
+     &              'and Ewald, or use different looping method.')
+            call fatal
+         endif
+      end if
 c
 c     choose the method for summing over pairwise interactions
 c
@@ -60,6 +77,7 @@ c
       include 'group.i'
       include 'hessn.i'
       include 'shunt.i'
+      include 'iounit.i'
       integer i,j,k,kk
       integer in,kn,jcell
       real*8 e,de,d2e
@@ -149,36 +167,57 @@ c
 c
 c     compute chain rule terms for Hessian matrix elements
 c
-               de = -fik / rb2
-               d2e = -2.0d0 * de/rb
+               if (rdepdielec) then
+                  de = -2.0d0*fik / (rb*rb2)
+                  d2e = 6.0d0*fik / (rb2*rb2)
+               else
+                  de = -fik / rb2
+                  d2e = -2.0d0 * de/rb
+               end if
 c
 c     use shifted energy switching if near the cutoff distance
 c
                if (r2 .gt. cut2) then
-                  e = fik / r
-                  shift = fik / (0.5d0*(off+cut))
-                  e = e - shift
                   r3 = r2 * r
                   r4 = r2 * r2
                   r5 = r2 * r3
                   r6 = r3 * r3
                   r7 = r3 * r4
-                  taper = c5*r5 + c4*r4 + c3*r3 + c2*r2 + c1*r + c0
-                  dtaper = 5.0d0*c5*r4 + 4.0d0*c4*r3
+                  if (tapertype .eq. 1) then
+                     e = fik / rb
+                     shift = fik / (0.5d0*(off+cut))
+                     e = e - shift
+                     taper = c5*r5 + c4*r4 + c3*r3 + c2*r2 + c1*r + c0
+                     dtaper = 5.0d0*c5*r4 + 4.0d0*c4*r3
      &                        + 3.0d0*c3*r2 + 2.0d0*c2*r + c1
-                  d2taper = 20.0d0*c5*r3 + 12.0d0*c4*r2
+                     d2taper = 20.0d0*c5*r3 + 12.0d0*c4*r2
      &                         + 6.0d0*c3*r + 2.0d0*c2
-                  trans = fik * (f7*r7 + f6*r6 + f5*r5 + f4*r4
+                     trans = fik * (f7*r7 + f6*r6 + f5*r5 + f4*r4
      &                            + f3*r3 + f2*r2 + f1*r + f0)
-                  dtrans = fik * (7.0d0*f7*r6 + 6.0d0*f6*r5
+                     dtrans = fik * (7.0d0*f7*r6 + 6.0d0*f6*r5
      &                            + 5.0d0*f5*r4 + 4.0d0*f4*r3
      &                            + 3.0d0*f3*r2 + 2.0d0*f2*r + f1)
-                  d2trans = fik * (42.0d0*f7*r5 + 30.0d0*f6*r4
+                     d2trans = fik * (42.0d0*f7*r5 + 30.0d0*f6*r4
      &                             + 20.0d0*f5*r3 + 12.0d0*f4*r2
      &                             + 6.0d0*f3*r + 2.0d0*f2)
-                  d2e = e*d2taper + 2.0d0*de*dtaper
-     &                     + d2e*taper + d2trans
-                  de = e*dtaper + de*taper + dtrans
+                     d2e = e*d2taper + 2.0d0*de*dtaper
+     &                        + d2e*taper + d2trans
+                     de = e*dtaper + de*taper + dtrans
+                  else if (tapertype .eq. 2) then
+                     e = fik / rb2
+                     taper = c5*r5 + c4*r4 + c3*r3 + c2*r2 + c1*r + c0
+                     dtaper = 5.0d0*c5*r4 + 4.0d0*c4*r3
+     &                        + 3.0d0*c3*r2 + 2.0d0*c2*r + c1
+                     d2taper = 20.0d0*c5*r3 + 12.0d0*c4*r2
+     &                         + 6.0d0*c3*r + 2.0d0*c2
+                     d2e = e*d2taper + 2.0d0*de*dtaper + d2e*taper
+                     de = e*dtaper + de*taper
+                  else
+                     write (iout,20)
+   20                format (/,' ECHARGE2  --  Unknown tapering ',
+     &                        'type; Select proper CHG-TAPER-TYPE.')
+                     call fatal
+                  endif
                end if
 c
 c     scale the interaction based on its group membership
@@ -252,36 +291,55 @@ c
 c
 c     compute chain rule terms for Hessian matrix elements
 c
-                  de = -fik / rb2
-                  d2e = -2.0d0 * de/rb
+                  if (rdepdielec) then
+                     de = -2.0d0*fik / (rb*rb2)
+                     d2e = 6.0d0*fik / (rb2*rb2)
+                  else
+                     de = -fik / rb2
+                     d2e = -2.0d0 * de/rb
+                  end if
 c
 c     use shifted energy switching if near the cutoff distance
 c
                   if (r2 .gt. cut2) then
-                     e = fik / r
-                     shift = fik / (0.5d0*(off+cut))
-                     e = e - shift
                      r3 = r2 * r
                      r4 = r2 * r2
                      r5 = r2 * r3
                      r6 = r3 * r3
                      r7 = r3 * r4
-                     taper = c5*r5 + c4*r4 + c3*r3 + c2*r2 + c1*r + c0
-                     dtaper = 5.0d0*c5*r4 + 4.0d0*c4*r3
+                     if (tapertype .eq. 1) then
+                        e = fik / rb
+                        shift = fik / (0.5d0*(off+cut))
+                        e = e - shift
+                        taper = c5*r5 + c4*r4 + c3*r3 + c2*r2 + c1*r +c0
+                        dtaper = 5.0d0*c5*r4 + 4.0d0*c4*r3
      &                           + 3.0d0*c3*r2 + 2.0d0*c2*r + c1
-                     d2taper = 20.0d0*c5*r3 + 12.0d0*c4*r2
+                        d2taper = 20.0d0*c5*r3 + 12.0d0*c4*r2
      &                            + 6.0d0*c3*r + 2.0d0*c2
-                     trans = fik * (f7*r7 + f6*r6 + f5*r5 + f4*r4
+                        trans = fik * (f7*r7 + f6*r6 + f5*r5 + f4*r4
      &                               + f3*r3 + f2*r2 + f1*r + f0)
-                     dtrans = fik * (7.0d0*f7*r6 + 6.0d0*f6*r5
+                        dtrans = fik * (7.0d0*f7*r6 + 6.0d0*f6*r5
      &                               + 5.0d0*f5*r4 + 4.0d0*f4*r3
      &                               + 3.0d0*f3*r2 + 2.0d0*f2*r + f1)
-                     d2trans = fik * (42.0d0*f7*r5 + 30.0d0*f6*r4
+                        d2trans = fik * (42.0d0*f7*r5 + 30.0d0*f6*r4
      &                                + 20.0d0*f5*r3 + 12.0d0*f4*r2
      &                                + 6.0d0*f3*r + 2.0d0*f2)
-                     d2e = e*d2taper + 2.0d0*de*dtaper
+                        d2e = e*d2taper + 2.0d0*de*dtaper
      &                        + d2e*taper + d2trans
-                     de = e*dtaper + de*taper + dtrans
+                        de = e*dtaper + de*taper + dtrans
+                     else if (tapertype .eq. 2) then
+                        e = fik / rb2
+                        taper = c5*r5 + c4*r4 + c3*r3 + c2*r2 + c1*r +c0
+                        dtaper = 5.0d0*c5*r4 + 4.0d0*c4*r3
+     &                        + 3.0d0*c3*r2 + 2.0d0*c2*r + c1
+                        d2taper = 20.0d0*c5*r3 + 12.0d0*c4*r2
+     &                         + 6.0d0*c3*r + 2.0d0*c2
+                        d2e = e*d2taper + 2.0d0*de*dtaper + d2e*taper
+                        de = e*dtaper + de*taper
+                     else
+                        write (iout,20)
+                        call fatal
+                     endif
                   end if
 c
 c     scale the interaction based on its group membership

@@ -17,7 +17,7 @@ c     the potential energy and perform energy partitioning analysis
 c     in terms of type of interaction or atom number
 c
 c
-      subroutine analysis (energy)
+      subroutine analysis
       implicit none
       include 'sizes.i'
       include 'analyz.i'
@@ -31,7 +31,6 @@ c
       include 'potent.i'
       include 'vdwpot.i'
       integer i
-      real*8 energy
       real*8 cutoff
 c
 c
@@ -61,6 +60,13 @@ c
       elf = 0.0d0
       eg = 0.0d0
       ex = 0.0d0
+      elfse = 0.0d0
+      ehalf = 0.0d0
+      emolf = 0.0d0
+      elllf = 0.0d0
+      evwlf = 0.0d0
+      epair = 0.0d0
+      esnb = 0.0d0
 c
 c     zero out energy partitioning components for each atom
 c
@@ -89,6 +95,13 @@ c
          aelf(i) = 0.0d0
          aeg(i) = 0.0d0
          aex(i) = 0.0d0
+         aelfse(i) = 0.0d0
+         aehalf(i) = 0.0d0
+         aemolf(i) = 0.0d0
+         aelllf(i) = 0.0d0
+         aevwlf(i) = 0.0d0
+         aepair(i) = 0.0d0
+         aesnb(i) = 0.0d0
       end do
 c
 c     zero out the total intermolecular energy
@@ -141,6 +154,7 @@ c
          if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal3
          if (vdwtyp .eq. 'GAUSSIAN')  call egauss3
       end if
+      if (use_snb) call esnbnd3
 c
 c     call the electrostatic energy component routines
 c
@@ -156,13 +170,19 @@ c
       if (use_metal)  call emetal3
       if (use_geom)  call egeom3
       if (use_extra)  call extra3
+      if (use_lfmmhar)  call harm4lfmm3
+      if (use_lfmmmor)  call morse4lfmm3
+      if (use_lfmmvwl)  call vdw4lfmm3
+      if (use_lfmmllr)  call ll4lfmm3
+      if (use_lfmmelp)  call pair4lfmm3
+      if (use_lfmmlfs)  call lfse4lfmm3
 c
 c     sum up to give the total potential energy
 c
       esum = eb + ea + eba + eub + eaa + eopb + eopd + eid + eit
      &          + et + ept + ebt + ett + ev + ec + ecd + ed + em
-     &          + ep + er + es + elf + eg + ex
-      energy = esum
+     &          + ep + er + es + elf + eg + ex + esnb
+     &          + ehalf + emolf + elllf + evwlf + epair + elfse
 c
 c     sum up to give the total potential energy per atom
 c
@@ -172,6 +192,8 @@ c
      &                 + aet(i) + aept(i) + aebt(i) + aett(i) + aev(i)
      &                 + aec(i) + aecd(i) + aed(i) + aem(i) + aep(i)
      &                 + aer(i) + aes(i) + aelf(i) + aeg(i) + aex(i)
+     &                 + aelfse(i) + aehalf(i) + aemolf(i) + aelllf(i)
+     &                 + aevwlf(i) + aepair(i) + aesnb(i)
       end do
 c
 c     check for an illegal value for the total energy

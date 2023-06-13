@@ -55,7 +55,11 @@ c
       include 'torpot.i'
       include 'units.i'
       include 'vdwpot.i'
-      integer i,j,k
+      include 'klfmms.i'
+      include 'ksnbnd.i'
+      include 'lfmmset.i'
+      include 'kgeoms.i'
+      integer i,j
       character*3 blank3
       character*8 blank8
       character*12 blank12
@@ -211,66 +215,72 @@ c
 c
 c     initialize values of some MMFF-specific parameters
 c
+      do i = 1, mmffmaxnb0
+         mmff_kb0(i) = 1000.0d0
+         mmff_b0(i) = 1000.0d0
+         mmffbs0(i) = blank8
+      enddo
+      do i = 1, mmffmaxnb1
+         mmff_kb1(i) = 1000.0d0
+         mmff_b1(i) = 1000.0d0
+         mmffbs1(i) = blank8
+      enddo
+      do i = 1, mmffmaxnsb
+         stbn_abc0(i) = 1000.0d0
+         stbn_cba0(i) = 1000.0d0
+         stbn_abc1(i) = 1000.0d0
+         stbn_cba1(i) = 1000.0d0
+         stbn_abc2(i) = 1000.0d0
+         stbn_cba2(i) = 1000.0d0
+         stbn_abc3(i) = 1000.0d0
+         stbn_cba3(i) = 1000.0d0
+         stbn_abc4(i) = 1000.0d0
+         stbn_cba4(i) = 1000.0d0
+         stbn_abc5(i) = 1000.0d0
+         stbn_cba5(i) = 1000.0d0
+         stbn_abc6(i) = 1000.0d0
+         stbn_cba6(i) = 1000.0d0
+         stbn_abc7(i) = 1000.0d0
+         stbn_cba7(i) = 1000.0d0
+         stbn_abc8(i) = 1000.0d0
+         stbn_cba8(i) = 1000.0d0
+         stbn_abc9(i) = 1000.0d0
+         stbn_cba9(i) = 1000.0d0
+         stbn_abc10(i) = 1000.0d0
+         stbn_cba10(i) = 1000.0d0
+         stbn_abc11(i) = 1000.0d0
+         stbn_cba11(i) = 1000.0d0
+      enddo 
       do i = 1, 100
          do j = 1, 100
-            mmff_kb(j,i) = 1000.0d0
-            mmff_kb1(j,i) = 1000.0d0
-            mmff_b0(j,i) = 1000.0d0
-            mmff_b1(j,i) = 1000.0d0
             bci(j,i) = 1000.0d0
             bci_1(j,i) = 1000.0d0
-            do k = 1, 100
-               stbn_abc(k,j,i) = 1000.0d0
-               stbn_cba(k,j,i) = 1000.0d0
-               stbn_abc1(k,j,i) = 1000.0d0
-               stbn_cba1(k,j,i) = 1000.0d0
-               stbn_abc2(k,j,i) = 1000.0d0
-               stbn_cba2(k,j,i) = 1000.0d0
-               stbn_abc3(k,j,i) = 1000.0d0
-               stbn_cba3(k,j,i) = 1000.0d0
-               stbn_abc4(k,j,i) = 1000.0d0
-               stbn_cba4(k,j,i) = 1000.0d0
-               stbn_abc5(k,j,i) = 1000.0d0
-               stbn_cba5(k,j,i) = 1000.0d0
-               stbn_abc6(k,j,i) = 1000.0d0
-               stbn_cba6(k,j,i) = 1000.0d0
-               stbn_abc7(k,j,i) = 1000.0d0
-               stbn_cba7(k,j,i) = 1000.0d0
-               stbn_abc8(k,j,i) = 1000.0d0
-               stbn_cba8(k,j,i) = 1000.0d0
-               stbn_abc9(k,j,i) = 1000.0d0
-               stbn_cba9(k,j,i) = 1000.0d0
-               stbn_abc10(k,j,i) = 1000.0d0
-               stbn_cba10(k,j,i) = 1000.0d0
-               stbn_abc11(k,j,i) = 1000.0d0
-               stbn_cba11(k,j,i) = 1000.0d0
-            end do
          end do
       end do
-      do i = 0, 100
-         do j = 1, 100
-            do k = 0, 100
-               mmff_ka(k,j,i) = 1000.0d0
-               mmff_ka1(k,j,i) = 1000.0d0
-               mmff_ka2(k,j,i) = 1000.0d0
-               mmff_ka3(k,j,i) = 1000.0d0
-               mmff_ka4(k,j,i) = 1000.0d0
-               mmff_ka5(k,j,i) = 1000.0d0
-               mmff_ka6(k,j,i) = 1000.0d0
-               mmff_ka7(k,j,i) = 1000.0d0
-               mmff_ka8(k,j,i) = 1000.0d0
-               mmff_ang0(k,j,i) = 1000.0d0
-               mmff_ang1(k,j,i) = 1000.0d0
-               mmff_ang2(k,j,i) = 1000.0d0
-               mmff_ang3(k,j,i) = 1000.0d0
-               mmff_ang4(k,j,i) = 1000.0d0
-               mmff_ang5(k,j,i) = 1000.0d0
-               mmff_ang6(k,j,i) = 1000.0d0
-               mmff_ang7(k,j,i) = 1000.0d0
-               mmff_ang8(k,j,i) = 1000.0d0
-            end do
-         end do
+      do i = 1, mmffmaxna
+         mmff_ka0(i) = 1000.0d0
+         mmff_ka1(i) = 1000.0d0
+         mmff_ka2(i) = 1000.0d0
+         mmff_ka3(i) = 1000.0d0
+         mmff_ka4(i) = 1000.0d0
+         mmff_ka5(i) = 1000.0d0
+         mmff_ka6(i) = 1000.0d0
+         mmff_ka7(i) = 1000.0d0
+         mmff_ka8(i) = 1000.0d0
+         mmff_ang0(i) = 1000.0d0
+         mmff_ang1(i) = 1000.0d0
+         mmff_ang2(i) = 1000.0d0
+         mmff_ang3(i) = 1000.0d0
+         mmff_ang4(i) = 1000.0d0
+         mmff_ang5(i) = 1000.0d0
+         mmff_ang6(i) = 1000.0d0
+         mmff_ang7(i) = 1000.0d0
+         mmff_ang8(i) = 1000.0d0
       end do
+      do i = 1, maxele
+         mmffanger(i,1) = 1000.0d0
+         mmffanger(i,2) = 1000.0d0
+      enddo
       do i = 1, maxnt
          kt(i) = blank16
          kt_1(i) = blank16
@@ -294,8 +304,12 @@ c
          t3_2(1,i) = 1000.0d0
          t3_2(2,i) = 1000.0d0
       end do
+      do i = 1, maxele
+         mmfftorer(i,1) = 1000.0d0
+         mmfftorer(i,2) = 1000.0d0
+      end do
       do i = 1, 5
-         do j = 1, 500
+         do j = 1, maxtyp
             eqclass(j,i) = 1000
          end do
       end do
@@ -306,6 +320,100 @@ c
             mmffaroma(j,i) = 0
          end do
       end do
+c
+c     initialize values of Modified MMFF parameters
+c
+      do i = 1, maxnstrlf
+         strlfid(i) = blank12
+         do j = 1, 3
+            strlfcon(i,j) = 0.0d0
+         enddo
+         strlfeq(i) = 0.0d0
+      enddo
+      do i = 1, maxnanglf
+         anglfid(i) = blank16
+         do j = 1, 3
+            anglfcon(i,j) = 0.0d0
+         enddo
+         anglfeq(i) = 0.0d0
+      enddo
+      do i = 1, maxntorlf
+         torlfid(i) = blank20
+         do j = 1, 6
+            torlfcon(i,j) = 0.0d0
+            torlfph(i,j) = 0.0d0
+         enddo
+      enddo
+c
+c     initialize values of LFMM-related parameters
+c
+      mlrestlow = 0.3d0
+      mlrestup = 1.2d0
+      mlrestw8t = 1.0d8
+      do i = 1, maxnhalf
+         halfid(i) = blank8
+         halfcon(i) = 0.0d0
+         halfeq(i) = 0.0d0
+      enddo
+      do i = 1, maxnmolf
+         molfid(i) = blank8
+         molfcon(i,1) = 0.0d0
+         molfcon(i,2) = 0.0d0
+         molfeq(i) = 0.0d0
+      enddo
+      do i = 1, maxnlllf
+         lllfid(i) = blank8
+         lllfcon(i,1) = 0.0d0
+         lllfcon(i,2) = 0.0d0
+      enddo
+      do i = 1, maxnvwlf
+         vwlfid(i) = blank8
+         vwlfcon(i,1) = 0.0d0
+         vwlfcon(i,2) = 0.0d0
+         vwlfcon(i,3) = 0.0d0
+      enddo
+      do i = 1, maxnaom
+         aomsigid(i) = blank8
+         aompixid(i) = blank8
+         aompiyid(i) = blank8
+         aomxdsid(i) = blank8
+         epairid(i) = blank8
+         do j = 1, 7
+            aomsig(i,j) = 0.0d0
+            aomxds(i,j) = 0.0d0
+            aompix(i,j) = 0.0d0
+            aompiy(i,j) = 0.0d0
+            epairpar(i,j) = 0.0d0
+         enddo
+      enddo
+c
+c     set default control options for LFMM calculation
+c
+      do i = 1, maxlfmm
+         metlfmm(i) = -1
+         elelfmm(i) = -1
+         spinlfmm(i) = -1
+         sdlfsedone(i) = .false.
+      enddo
+      shajorlfse = 1
+      barysjlfse = 2
+      anlderlfse = 1
+      stpzlfse = 0.02d0
+      displfse = 2
+      doderlfse = 0
+      scnderlfse = 0
+      stbenglfse = 0
+      debuglfse = 0
+      dosdfdout = .false.
+      updtlfshess = .true.
+      reproduceold = .false.
+c
+c     initialize values of classes to be treated by 12-10 vdw potential
+c
+      do i = 1, maxpsnb
+         kisnb(1,i) = 0
+         kisnb(2,i) = 0
+      enddo
 c
 c     set default control parameters for local geometry terms
 c
@@ -373,6 +481,8 @@ c
       c5scale = 1.0d0
       neutnbr = .false.
       neutcut = .false.
+      rdepdielec = .false.
+      tapertype = 1
 c
 c     set default control parameters for polarizable multipoles
 c
@@ -411,5 +521,9 @@ c
       rfsize = 1000000.0d0
       rfbulkd = 80.0d0
       rfterms = 1
+c
+c     set default type of functional form for torsional restraints
+c
+      use_tfix2 = .false.
       return
       end

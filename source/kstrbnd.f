@@ -112,7 +112,7 @@ c
 c
 c     use special stretch-bend parameter assignment method for MMFF
 c
-      if (forcefield .eq. 'MMFF94') then
+      if (forcefield .eq. 'MMFF94' .or. forcefield .eq. 'MMFFLF') then
          call kstrbndm
          return
       end if
@@ -218,13 +218,15 @@ c
       include 'ring.i'
       include 'strbnd.i'
       integer i,j,k,l,m
-      integer ia,ib,ic
+      integer ia,ib,ic,size
       integer ita,itb,itc
       integer ina,inb,inc
       integer ira,irb,irc
       integer nb1,nb2
       integer stbnt,ab,bc
-      logical ring3,ring4
+      character*4 pa,pb,pc
+      character*12 pt
+      logical ring3,ring4,done
 c
 c
 c     assign stretch-bend parameters for each angle
@@ -234,16 +236,26 @@ c
          ia = iang(1,i)
          ib = iang(2,i)
          ic = iang(3,i)
+         ita = class (ia)
+         itb = class (ib)
+         itc = class (ic)
+         ina = atomic(ia)
+         inb = atomic(ib)
+         inc = atomic(ic)
+         size = 4
+         done = .false.
+         call numeral (ita,pa,size)
+         call numeral (itb,pb,size)
+         call numeral (itc,pc,size)
+         if (ia .le. ic) then
+            pt = pa//pb//pc
+         else
+            pt = pc//pb//pa
+         endif
 c
 c     stretch-bend interactions are omitted for linear angles
 c
          if (lin(class(ib)) .eq. 0) then
-            ita = class (ia)
-            itb = class (ib)
-            itc = class (ic)
-            ina = atomic(ia)
-            inb = atomic(ib)
-            inc = atomic(ic)
             sbk(1,nstrbnd+1) = 0.0d0
             sbk(2,nstrbnd+1) = 0.0d0
             do k = 1, n12(ib)
@@ -404,216 +416,177 @@ c
             if (inc.ge.19 .and. inc.le.36)  irc = 3
             if (inc.ge.37 .and. inc.le.54)  irc = 4
 c
-c     assign parameters via explicit values or empirical rules
+c     assign parameters via explicit values
 c
             if (stbnt .eq. 11) then
-               if ((stbn_abc11(ita,itb,itc).ne.1000.0d0) .and.
-     &             (stbn_cba11(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc11(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba11(ita,itb,itc)
-               else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
-               end if
+               do j = 1, mmffmaxnsb
+                  if (mmffsbabclc11(j) .eq. pt) then
+                     nstrbnd = nstrbnd + 1
+                     isb(1,nstrbnd) = i
+                     isb(2,nstrbnd) = nb1
+                     isb(3,nstrbnd) = nb2
+                     sbk(1,nstrbnd) = stbn_abc11(j)
+                     sbk(2,nstrbnd) = stbn_cba11(j)
+                     done = .true.
+                     exit
+                  endif
+               enddo
             else if (stbnt .eq. 10) then
-               if ((stbn_abc10(ita,itb,itc).ne.1000.0d0) .and.
-     &             (stbn_cba10(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc10(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba10(ita,itb,itc)
-               else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
-               end if
+               do j = 1, mmffmaxnsb
+                  if (mmffsbabclc10(j) .eq. pt) then
+                     nstrbnd = nstrbnd + 1
+                     isb(1,nstrbnd) = i
+                     isb(2,nstrbnd) = nb1
+                     isb(3,nstrbnd) = nb2
+                     sbk(1,nstrbnd) = stbn_abc10(j)
+                     sbk(2,nstrbnd) = stbn_cba10(j)
+                     done = .true.
+                     exit
+                  endif
+               enddo
             else if (stbnt .eq. 9) then
-               if ((stbn_abc9(ita,itb,itc).ne.1000.0d0) .and.
-     &             (stbn_cba9(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc9(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba9(ita,itb,itc)
-               else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
-               end if
+               do j = 1, mmffmaxnsb
+                  if (mmffsbabclc9(j) .eq. pt) then
+                     nstrbnd = nstrbnd + 1
+                     isb(1,nstrbnd) = i
+                     isb(2,nstrbnd) = nb1
+                     isb(3,nstrbnd) = nb2
+                     sbk(1,nstrbnd) = stbn_abc9(j)
+                     sbk(2,nstrbnd) = stbn_cba9(j)
+                     done = .true.
+                     exit
+                  endif
+               enddo
             else if (stbnt .eq. 8) then
-               if ((stbn_abc8(ita,itb,itc).ne.1000.0d0) .and.
-     &             (stbn_cba3(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc8(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba8(ita,itb,itc)
-               else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
-               end if
+               do j = 1, mmffmaxnsb
+                  if (mmffsbabclc8(j) .eq. pt) then
+                     nstrbnd = nstrbnd + 1
+                     isb(1,nstrbnd) = i
+                     isb(2,nstrbnd) = nb1
+                     isb(3,nstrbnd) = nb2
+                     sbk(1,nstrbnd) = stbn_abc8(j)
+                     sbk(2,nstrbnd) = stbn_cba8(j)
+                     done = .true.
+                     exit
+                  endif
+               enddo
             else if (stbnt .eq. 7) then
-               if ((stbn_abc7(ita,itb,itc).ne.1000.0d0) .and.
-     &             (stbn_cba7(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc7(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba7(ita,itb,itc)
-               else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
-               end if
+               do j = 1, mmffmaxnsb
+                  if (mmffsbabclc7(j) .eq. pt) then
+                     nstrbnd = nstrbnd + 1
+                     isb(1,nstrbnd) = i
+                     isb(2,nstrbnd) = nb1
+                     isb(3,nstrbnd) = nb2
+                     sbk(1,nstrbnd) = stbn_abc7(j)
+                     sbk(2,nstrbnd) = stbn_cba7(j)
+                     done = .true.
+                     exit
+                  endif
+               enddo
             else if (stbnt .eq. 6) then
-               if ((stbn_abc6(ita,itb,itc).ne.1000.0d0) .and.
-     &             (stbn_cba3(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc6(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba6(ita,itb,itc)
-               else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
-               end if
+               do j = 1, mmffmaxnsb
+                  if (mmffsbabclc6(j) .eq. pt) then
+                     nstrbnd = nstrbnd + 1
+                     isb(1,nstrbnd) = i
+                     isb(2,nstrbnd) = nb1
+                     isb(3,nstrbnd) = nb2
+                     sbk(1,nstrbnd) = stbn_abc6(j)
+                     sbk(2,nstrbnd) = stbn_cba6(j)
+                     done = .true.
+                     exit
+                  endif
+               enddo
             else if (stbnt .eq. 5) then
-               if (((stbn_abc5(ita,itb,itc).ne.1000.0d0) .and.
-     &              (stbn_cba3(ita,itb,itc).ne.1000.0d0))
-     &            .or. (ita.eq.22.and.itb.eq.22.and.itc.eq.22)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc5(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba5(ita,itb,itc)
-               else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
-               end if
+               do j = 1, mmffmaxnsb
+                  if (mmffsbabclc5(j) .eq. pt) then
+                     nstrbnd = nstrbnd + 1
+                     isb(1,nstrbnd) = i
+                     isb(2,nstrbnd) = nb1
+                     isb(3,nstrbnd) = nb2
+                     sbk(1,nstrbnd) = stbn_abc5(j)
+                     sbk(2,nstrbnd) = stbn_cba5(j)
+                     done = .true.
+                     exit
+                  endif
+               enddo
             else if (stbnt .eq. 4) then
-               if ((stbn_abc4(ita,itb,itc).ne.1000.0d0) .and.
-     &             (stbn_cba4(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc4(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba4(ita,itb,itc)
-               else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
-               end if
+               do j = 1, mmffmaxnsb
+                  if (mmffsbabclc4(j) .eq. pt) then
+                     nstrbnd = nstrbnd + 1
+                     isb(1,nstrbnd) = i
+                     isb(2,nstrbnd) = nb1
+                     isb(3,nstrbnd) = nb2
+                     sbk(1,nstrbnd) = stbn_abc4(j)
+                     sbk(2,nstrbnd) = stbn_cba4(j)
+                     done = .true.
+                     exit
+                  endif
+               enddo
             else if (stbnt .eq. 3) then
-               if ((stbn_abc3(ita,itb,itc).ne.1000.0d0) .and.
-     &             (stbn_cba3(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc3(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba3(ita,itb,itc)
-               else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
-               end if
+               do j = 1, mmffmaxnsb
+                  if (mmffsbabclc3(j) .eq. pt) then
+                     nstrbnd = nstrbnd + 1
+                     isb(1,nstrbnd) = i
+                     isb(2,nstrbnd) = nb1
+                     isb(3,nstrbnd) = nb2
+                     sbk(1,nstrbnd) = stbn_abc3(j)
+                     sbk(2,nstrbnd) = stbn_cba3(j)
+                     done = .true.
+                     exit
+                  endif
+               enddo
             else if (stbnt .eq. 2) then
-              if ((stbn_abc2(ita,itb,itc).ne.1000.0d0) .and.
-     &            (stbn_cba2(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc2(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba2(ita,itb,itc)
-               else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
-               end if
+               do j = 1, mmffmaxnsb
+                  if (mmffsbabclc2(j) .eq. pt) then
+                     nstrbnd = nstrbnd + 1
+                     isb(1,nstrbnd) = i
+                     isb(2,nstrbnd) = nb1
+                     isb(3,nstrbnd) = nb2
+                     sbk(1,nstrbnd) = stbn_abc2(j)
+                     sbk(2,nstrbnd) = stbn_cba2(j)
+                     done = .true.
+                     exit
+                  endif
+               enddo
             else if (stbnt .eq. 1) then
-               if ((stbn_abc1(ita,itb,itc).ne.1000.0d0) .and.
-     &             (stbn_cba1(ita,itb,itc).ne.1000.0d0)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc1(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba1(ita,itb,itc)
-               else 
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
-               end if
+               do j = 1, mmffmaxnsb
+                  if (mmffsbabclc1(j) .eq. pt) then
+                     nstrbnd = nstrbnd + 1
+                     isb(1,nstrbnd) = i
+                     isb(2,nstrbnd) = nb1
+                     isb(3,nstrbnd) = nb2
+                     sbk(1,nstrbnd) = stbn_abc1(j)
+                     sbk(2,nstrbnd) = stbn_cba1(j)
+                     done = .true.
+                     exit
+                  endif
+               enddo
             else if (stbnt .eq. 0) then
-               if (((stbn_abc(ita,itb,itc) .ne. 1000.0d0) .and.
-     &              (stbn_cba(ita,itb,itc) .ne. 1000.0d0))
-     &            .or. (ita.eq.12.AND.itb.eq.20.AND.itc.eq.20)
-     &            .or. (ita.eq.20.AND.itb.eq.20.AND.itc.eq.12)) then
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = stbn_abc(ita,itb,itc)
-                  sbk(2,nstrbnd) = stbn_cba(ita,itb,itc)
-               else
-                  nstrbnd = nstrbnd + 1
-                  isb(1,nstrbnd) = i
-                  isb(2,nstrbnd) = nb1
-                  isb(3,nstrbnd) = nb2
-                  sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
-                  sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
-               end if
+               do j = 1, mmffmaxnsb
+                  if (mmffsbabclc0(j) .eq. pt) then
+                     nstrbnd = nstrbnd + 1
+                     isb(1,nstrbnd) = i
+                     isb(2,nstrbnd) = nb1
+                     isb(3,nstrbnd) = nb2
+                     sbk(1,nstrbnd) = stbn_abc0(j)
+                     sbk(2,nstrbnd) = stbn_cba0(j)
+                     done = .true.
+                     exit
+                  endif
+               enddo
             end if
+c
+c     assign missing parameters by means of empiric rule 
+c
+            if (.not.done) then
+               nstrbnd = nstrbnd + 1
+               isb(1,nstrbnd) = i
+               isb(2,nstrbnd) = nb1
+               isb(3,nstrbnd) = nb2
+               sbk(1,nstrbnd) = defstbn_abc(ira,irb,irc)
+               sbk(2,nstrbnd) = defstbn_cba(ira,irb,irc)
+               done = .true.
+            endif
          end if
       end do
 c

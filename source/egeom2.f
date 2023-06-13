@@ -40,6 +40,7 @@ c
       real*8 target,force
       real*8 dot,angle
       real*8 cosine,sine
+      real*8 cosdtr,dtr
       real*8 dt,dt2,deddt
       real*8 term,terma,termc
       real*8 termx,termy,termz
@@ -691,8 +692,17 @@ c
                else if (dt .lt. -180.0d0) then
                   dt = dt + 360.0d0
                end if
-               dedphi = 2.0d0 * radian * force * dt
-               d2edphi2 = 2.0d0 * radian**2 * force
+               if (use_tfix2) then
+                  dtr = dt / radian
+                  cosdtr = cos(dtr)
+                  dedphi = 2.0d0 * radian * force *
+     &                     (1-cosdtr) * sin(dtr)
+                  d2edphi2 = 2.0d0 * radian**2 * force *
+     &            (1.0d0 + cosdtr - 2.0d0 * cosdtr**2)
+               else
+                  dedphi = 2.0d0 * radian * force * dt
+                  d2edphi2 = 2.0d0 * radian**2 * force
+               end if
 c
 c     scale the interaction based on its group membership
 c

@@ -91,7 +91,7 @@ c
 c
 c     assign van der Waals and electrostatic potential parameters
 c
-      if (use_vdw .or. use_solv)  call kvdw
+      if (use_vdw .or. use_solv .or. use_snb)  call kvdw
       if (use_charge .or. use_chgdpl .or. use_solv)  call kcharge
       if (use_dipole .or. use_chgdpl)  call kdipole
       if (use_mpole .or. use_polar .or.
@@ -106,6 +106,9 @@ c
       if (use_orbit)  call korbit
       if (use_geom)  call kgeom
       if (use_extra)  call kextra
+      if (use_lfmm .or. use_lfmmhar .or. use_lfmmmor .or.
+     &    use_lfmmllr .or. use_lfmmvwl .or. use_lfmmelp .or.
+     &    use_lfmmlfs) call klfmm
 c
 c     set hybrid parameter values for free energy perturbation
 c

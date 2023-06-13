@@ -37,6 +37,13 @@ c     es     solvation potential energy of the system
 c     elf    metal ligand field potential energy of the system
 c     eg     geometric restraint potential energy of the system
 c     ex     extra term potential energy of the system
+c     ehalf  LFMM-harmonic stretch potential energy of the system
+c     emolf  LFMM-Morse stretch potential energy of the system
+c     elllf  LFMM Ligand-Ligand l-l repulsion potential energy of the system
+c     evwlf  LFMM-Lennard-Jones-like stretch potential energy of the system
+c     epair  empirical electron pairing energy of the system
+c     elfse  LFSE term to potential energy of the system
+c     esnb   special 12-10 non-bonded potential energy of the system
 c
 c
       real*8 esum,eb,ea,eba
@@ -45,5 +52,9 @@ c
       real*8 ebt,ett,ev,ec
       real*8 ecd,ed,em,ep,er
       real*8 es,elf,eg,ex
+      real*8 ehalf,emolf,elllf
+      real*8 evwlf,epair,elfse
+      real*8 esnb
       common /energi/ esum,eb,ea,eba,eub,eaa,eopb,eopd,eid,eit,et,ept,
-     &                ebt,ett,ev,ec,ecd,ed,em,ep,er,es,elf,eg,ex
+     &                ebt,ett,ev,ec,ecd,ed,em,ep,er,es,elf,eg,ex,
+     &                ehalf,emolf,elllf,evwlf,epair,elfse,esnb

@@ -32,7 +32,7 @@ c
       real*8 xab,yab,zab
       real*8 rab,rab2
       real*8 expterm,bde
-      real*8 dt,dt2,term
+      real*8 dt,dt2,dt3,term
       real*8 termx,termy,termz
       real*8 de,deddt,d2eddt2
       real*8 d2e(3,3)
@@ -87,7 +87,16 @@ c
                bde = 0.25d0 * bndunit * force
                deddt = 4.0d0 * bde * (1.0d0-expterm) * expterm
                d2eddt2 = -8.0d0 * bde * (1.0d0-2.0d0*expterm) * expterm
-            end if
+            else if (bndtyp .eq. 'POLYNOME') then
+               dt2 = dt * dt
+               dt3 = dt2 * dt
+               deddt = 2.0d0 * bndunit * ( bkpoly(j,1) * dt +
+     &                         1.5d0 * bkpoly(j,2) * cbnd * dt2 +
+     &                         2.0d0 * bkpoly(j,3) * qbnd * dt3 )
+               d2eddt2 = 2.0d0 * bndunit * ( bkpoly(j,1) +
+     &                         3.0d0 * bkpoly(j,2) * cbnd * dt +
+     &                         6.0d0 * bkpoly(j,3) * qbnd * dt2 )
+            endif
 c
 c     scale the interaction based on its group membership
 c

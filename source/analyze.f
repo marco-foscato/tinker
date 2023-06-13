@@ -36,6 +36,7 @@ c
       logical dolarge,dodetail
       logical domoment,dovirial
       logical doconect
+      logical dograd,dograddecomp
       logical exist
       logical, allocatable :: active(:)
       character*1 letter
@@ -64,11 +65,13 @@ c
      &           /,' Details for All Individual Interactions [D]',
      &           /,' Electrostatic Moments and Principle Axes [M]',
      &           /,' Internal Virial, dE/dV Values & Pressure [V]',
-     &           /,' Connectivity Lists for Each of the Atoms [C]')
+     &           /,' Connectivity Lists for Each of the Atoms [C]',
+     &           /,' Potential Energy first derivatives wrt XYZ [S]',
+     &           /,' Decomposition of first derivatives wrt XYZ [T]')
    20    continue
          write (iout,30)
    30    format (/,' Enter the Desired Analysis Types',
-     &              ' [G,P,E,A,L,D,M,V,C] :  ',$)
+     &              ' [G,P,E,A,L,D,M,V,C,S,T] :  ',$)
          read (input,40,err=20)  string
    40    format (a120)
       end if
@@ -84,6 +87,8 @@ c
       domoment = .false.
       dovirial = .false.
       doconect = .false.
+      dograd = .false.
+      dograddecomp = .false.
       call upcase (string)
       do i = 1, trimtext(string)
          letter = string(i:i)
@@ -96,6 +101,8 @@ c
          if (letter .eq. 'M')  domoment = .true.
          if (letter .eq. 'V')  dovirial = .true.
          if (letter .eq. 'C')  doconect = .true.
+         if (letter .eq. 'S')  dograd = .true.
+         if (letter .eq. 'T')  dograddecomp = .true.
       end do
 c
 c     perform dynamic allocation of some local arrays
@@ -227,6 +234,14 @@ c     energy partitioning over the individual atoms
 c
          if (doatom)  call atomyze (active)
 c
+c     compute and report the gradient
+c
+         if (dograd)  call gradyze
+c
+c     compute the gradient and report its decomposition analysis
+c
+         if (dograddecomp) call graddecompyze
+c
 c     attempt to read next structure from the coordinate file
 c
          call readxyz (ixyz)
@@ -239,7 +254,11 @@ c
 c     perform any final tasks before program exit
 c
       close (unit=ixyz)
-      if (dodetail)  debug = .false.
+      if (dodetail) then
+         debug = .false.
+      else 
+         debug = .true.
+      end if
       call final
       end
 c
@@ -445,6 +464,11 @@ c
       include 'urey.i'
       include 'vdw.i'
       include 'vdwpot.i'
+      include 'bndpot.i'
+      include 'lfmmset.i'
+      include 'lfmm.i'
+      include 'snbnb.i'
+      include 'couple.i'
       integer i,j,k
       integer ia,ib,ic
       integer id,ie,ig
@@ -457,7 +481,7 @@ c
       real*8 ampli(6)
       real*8 phase(6)
       real*8 mpl(13)
-      logical header
+      logical header,report
       logical active(*)
 c
 c
@@ -484,7 +508,7 @@ c
    50    format (' Urey-Bradley',21x,i15)
       end if
       if (nangang .ne. 0) then
-         write (iout,50)  nangang
+         write (iout,60)  nangang
    60    format (' Angle-Angles',21x,i15)
       end if
       if (nopbend .ne. 0) then
@@ -546,6 +570,34 @@ c
       if (nbpi .ne. 0) then
          write (iout,210)  nbpi
   210    format (' Conjugated Pi-Bonds',14x,i15)
+      end if
+      if (nlfse .ne. 0) then
+         write (iout,211) nlfse
+  211    format (' LFMM: ligand field',15x,i15)
+      end if
+      if (nhalf .ne. 0) then
+         write (iout,212) nhalf
+  212    format (' LFMM: harmonic M-L',15x,i15)
+      end if
+      if (nmolf .ne. 0) then
+         write (iout,213) nmolf
+  213    format (' LFMM: Morse M-L',18x,i15)
+      end if
+      if (nlllf .ne. 0) then
+         write (iout,214) nlllf
+  214    format (' LFMM: L-L pure rep. ',13x,i15)
+      end if
+      if (nvwlf .ne. 0) then
+         write (iout,215) nvwlf
+  215    format (' LFMM: L-L rep. vdW',15x,i15)
+      end if
+      if (npair .ne. 0) then
+         write (iout,216) npair
+  216    format (' LFMM: electron pairing',11x,i15)
+      end if
+      if (nsnb .ne. 0) then
+         write (iout,217) nsnb
+  217    format (' 12-10 van der Waals ',13x,i15)
       end if
 c
 c     parameters used for molecular mechanics atom types
@@ -628,14 +680,25 @@ c
             ia = ibnd(1,i)
             ib = ibnd(2,i)
             if (active(ia) .or. active(ib)) then
-               if (header) then
-                  header = .false.
-                  write (iout,290)
-  290             format (/,' Bond Stretching Parameters :',
-     &                    //,10x,'Atom Numbers',25x,'KS',7x,'Bond',/)
-               end if
-               write (iout,300)  i,ia,ib,bk(i),bl(i)
-  300          format (i6,3x,2i6,19x,f10.3,f10.4)
+               if (bndtyp .eq. 'POLYNOME') then
+                  if (header) then
+                     header = .false.
+                     write (iout,290)
+  290                format (/,' Bond Stretching Parameters :',
+     &                       //,10x,'Atom Numbers',25x,'Bond',7x,'K',/)
+                  end if
+                  write (iout,291)  i,ia,ib,bl(i),bkpoly(i,:)
+  291             format (i6,3x,2i6,8x,f10.4,2x,3f12.3,2x,'Polynomial')
+               else
+                  if (header) then
+                     header = .false.
+                     write (iout,300)
+  300                format (/,' Bond Stretching Parameters :',
+     &                       //,10x,'Atom Numbers',25x,'KS',7x,'Bond',/)
+                  end if
+                  write (iout,301)  i,ia,ib,bk(i),bl(i)
+  301             format (i6,3x,2i6,19x,f10.3,f10.4)
+               endif
             end if
          end do
       end if
@@ -651,10 +714,18 @@ c
             if (active(ia) .or. active(ib) .or. active(ic)) then
                if (header) then
                   header = .false.
-                  write (iout,310)
-  310             format (/,' Angle Bending Parameters :',
-     &                    //,13x,'Atom Numbers',22x,'KB',
-     &                       6x,'Angle',3x,'Fold',4x,'Type',/)
+                  if (angtyp(i) .eq. 'POLYNOME') then
+                     write (iout,309)
+  309                format (/,' Angle Bending Parameters :',
+     &                       //,13x,'Atom Numbers',7x,
+     &                          'Angle',7x,'k1',8x,'k2',8x,'k3',
+     &                          5x,'Type',/)
+                  else
+                     write (iout,310)
+  310                format (/,' Angle Bending Parameters :',
+     &                       //,13x,'Atom Numbers',22x,'KB',
+     &                          6x,'Angle',3x,'Fold',4x,'Type',/)
+                  endif
                end if
                if (angtyp(i) .eq. 'HARMONIC') then
                   write (iout,320)  i,ia,ib,ic,ak(i),anat(i)
@@ -662,12 +733,15 @@ c
                else if (angtyp(i) .eq. 'IN-PLANE') then
                   write (iout,330)  i,ia,ib,ic,ak(i),anat(i)
   330             format (i6,3x,3i6,13x,2f10.3,9x,'In-Plane')
-               else if (angtyp(i) .eq. 'IN-PLANE') then
+               else if (angtyp(i) .eq. 'LINEAR') then
                   write (iout,340)  i,ia,ib,ic,ak(i),anat(i)
   340             format (i6,3x,3i6,13x,2f10.3,9x,'Linear')
                else if (angtyp(i) .eq. 'FOURIER ') then
                   write (iout,350)  i,ia,ib,ic,ak(i),anat(i),afld(i)
   350             format (i6,3x,3i6,13x,2f10.3,f7.1,2x,'Fourier')
+               else if (angtyp(i) .eq. 'POLYNOME') then
+                  write (iout,351)  i,ia,ib,ic,anat(i),akpoly(i,:)
+  351             format (i6,2x,3i6,5x,f6.1,2x,3f12.3,2x,'Polynomial')
                end if
             end if
          end do
@@ -1198,6 +1272,158 @@ c
   770       format (i6,3x,2i6,19x,2f10.4)
          end do
       end if
+c
+c     parameters used in metal-ligand interaction (by LFMM)
+c
+      if (use_lfmmhar) then
+         header = .true.
+         do i = 1, nhalf
+            ia = ihalf(1,i)
+            ib = ihalf(2,i)
+            if (active(ia) .or. active(ib)) then
+               if (header) then
+                  header = .false.
+                  write (iout,780)
+  780             format (/,' Metal-ligand harmonic parameters :',
+     &                    //,12x,'Atom Numbers',7x,'KS',8x,'Bond',/)
+               end if
+               write (iout,790) i,ia,ib,khalf(i),lhalf(i)
+  790          format (i6,3x,2i6,5x,2f10.4)
+            endif 
+         enddo
+      end if
+      if (use_lfmmmor) then
+         header = .true.
+         do i = 1, nmolf
+            ia = imolf(1,i)
+            ib = imolf(2,i)
+            if (active(ia) .or. active(ib)) then
+               if (header) then
+                  header = .false.
+                  write (iout,800)
+  800             format (/,' Metal-ligand Morse bond parameters :',
+     &                 //,12x,'Atom Numbers',7x,'A',9x,'B',9x,'Bond',/)
+               end if
+               write (iout,810) i,ia,ib,amolf(i),bmolf(i),lmolf(i)
+  810          format (i6,3x,2i6,5x,3f10.4)
+            endif
+         enddo      
+      endif
+c
+c     parameters used in ligand-ligand repulsion (by LFMM)
+c
+      if (use_lfmmllr) then
+         header = .true.
+         do i = 1, nlllf
+            ia = illlf(1,i)
+            ib = illlf(2,i)
+            if (active(ia) .or. active(ib)) then
+               if (header) then
+                  header = .false.
+                  write (iout,820)
+  820             format (/,' Ligand-Ligand pure repulsion parameters:',
+     &                    //,12x,'Atom Numbers',7x,'A',9x,'N',/)
+               end if
+               write (iout,830) i,ia,ib,alllf(i),mlllf(i)
+  830          format (i6,3x,2i6,2x,f12.3,f10.3)
+            endif
+         enddo
+      end if
+      if (use_lfmmvwl) then
+         header = .true.
+         do i = 1, nvwlf
+            ia = ivwlf(1,i)
+            ib = ivwlf(2,i)
+            if (active(ia) .or. active(ib)) then
+               if (header) then
+                  header = .false.
+                  write (iout,840)
+  840             format (/,' Ligand-Ligand van der Waals parameters :',
+     &                    //,12x,'Atom Numbers',8x,'A',8x,'B',8x,'M',/)
+               end if
+               write (iout,850) i,ia,ib,avwlf(i),bvwlf(i),mvwlf(i)
+  850          format (i6,3x,2i6,4x,2f10.4,i6)
+            endif
+         enddo
+      endif
+c
+c     parameters used in ligand field stabilization energy (by LFMM)
+c
+      if (use_lfmmlfs) then
+         header = .true.
+         report = .false.
+         do i = 1, nlfse
+            do j = 1, nligs(i)
+               if (active(imlfse(i)) .or. active(illfse(i,j))) then
+                  report = .true.
+                  exit
+               endif
+            enddo
+            if (.not. report) cycle
+            if (header) then
+               header = .false.
+               write (iout,860)
+  860          format (/,' Ligand Field parameters ',
+     &                 '(Angular Overlap Model) :',
+     &                 //,8x,'AOM parameters',/)
+            end if
+            write (iout,870) i,imlfse(i)
+  870       format (i6,4x,' metal: ',i6)
+            do j = 1, nligs(i)
+               if (active(imlfse(i)) .or. active(illfse(i,j))) then
+                  write (iout,874) illfse(i,j)
+  874             format (10x,' Coordinating atom: ',i6)
+                  write (iout,875) 'esig',esig(i,j,:)
+                  write (iout,875) 'epix',epix(i,j,:)
+                  write (iout,875) 'epiy',epiy(i,j,:)
+                  write (iout,875) 'exds',exds(i,j,:)
+  875             format (10x,a4,2x,7f14.3)
+               endif
+            enddo
+         enddo
+      endif
+c
+c     parameters used in calculation of electron pairing energy (by LFMM)
+c
+      if (use_lfmmelp) then
+         header = .true.
+         do i = 1, npair
+            ia = ipair(1,i) 
+            ib = ipair(2,i)
+            if (active(ia) .or. active(ib)) then
+               if (header) then
+                  header = .false.
+                  write (iout,880)
+  880             format (/,' Electron pairing parameters :',
+     &                    //,6x,'Atom Numbers',6x,'AOM parameters',/)
+               end if 
+               write (iout,890) i,ia,ib,ppair(i,:)
+  890          format (i5,1x,2i5,4x,7f8.1)
+            endif
+         enddo
+      endif
+c
+c     parameters used for 12-10 non-bonded terms
+c
+      if (use_snb) then
+         header = .true.
+         do i = 1, nsnb
+            ia = isnb(1,i)
+            ib = isnb(2,i)
+            if (active(ia) .or. active(ib)) then
+               if (header) then
+                  header = .false.
+                  write (iout,900)
+  900             format  (/,' Non-bonded 12-10 van der Waals ',
+     &                     'parameters :',
+     &                     //,6x,'Atom Numbers',3x,'Radius',3x,
+     &                     'Epsilon',/)
+               end if
+               write (iout,910) i,ia,ib,rsnd(i),epssnb(i)
+  910          format (i6,3x,2i6,10x,2f10.4)
+            endif
+         enddo
+      endif
       return
       end
 c
@@ -1223,25 +1449,27 @@ c
       include 'inter.i'
       include 'iounit.i'
       include 'molcul.i'
-      real*8 energy
+      include 'energi.i'
       character*120 fstr
 c
 c
 c     perform the energy analysis by atom and component
 c
-      call analysis (energy)
+      call analysis
 c
 c     print out the total potential energy of the system
 c
       fstr = '(/,'' Total Potential Energy :'',8x,f16.4,'' Kcal/mole'')'
+      if (digits .ge. 5)  fstr(32:39) = '6x,f17.5'
       if (digits .ge. 6)  fstr(32:39) = '6x,f18.6'
       if (digits .ge. 8)  fstr(32:39) = '4x,f20.8'
-      if (abs(energy) .ge. 1.0d10)  fstr(35:35) = 'd'
-      write (iout,fstr)  energy
+      if (abs(esum) .ge. 1.0d10)  fstr(35:35) = 'd'
+      write (iout,fstr)  esum
 c
 c     intermolecular energy for systems with multiple molecules
 c
       fstr = '(/,'' Intermolecular Energy :'',9x,f16.4,'' Kcal/mole'')'
+      if (digits .ge. 5)  fstr(31:38) = '7x,f17.5'
       if (digits .ge. 6)  fstr(31:38) = '7x,f18.6'
       if (digits .ge. 8)  fstr(31:38) = '5x,f20.8'
       if (abs(einter) .ge. 1.0d10)  fstr(34:34) = 'd'
@@ -1263,6 +1491,8 @@ c     interactions for each of the potential energy terms
 c
 c
       subroutine partyze
+      implicit none
+      include 'sizes.i'
       include 'action.i'
       include 'cutoff.i'
       include 'energi.i'
@@ -1277,6 +1507,7 @@ c
 c     write out each energy component to the desired precision
 c
       form1 = '5x,f16.4,i15'
+      if (digits .ge. 5)  form1 = '3x,f17.5,i15'
       if (digits .ge. 6)  form1 = '3x,f18.6,i15'
       if (digits .ge. 8)  form1 = '1x,f20.8,i15'
       form2 = form1(1:3)//'d'//form1(5:12)
@@ -1395,6 +1626,34 @@ c
          fstr = '('' Metal Ligand Field'',9x,'//form1//')'
          write (iout,fstr)  elf,nelf
       end if
+      if (use_lfmmlfs .and. nelfse.ne.0) then
+         fstr = '('' LFMM: Ligand Field'',9x,'//form1//')'
+         write (iout,fstr)  elfse,nelfse
+      end if
+      if (use_lfmmhar .and. nehalf.ne.0) then
+         fstr = '('' LFMM: harmonic L-M'',9x,'//form1//')'
+         write (iout,fstr)  ehalf,nehalf
+      end if
+      if (use_lfmmmor .and. nemolf.ne.0) then
+         fstr = '('' LFMM: Morse L-M'',12x,'//form1//')'
+         write (iout,fstr)  emolf,nemolf
+      end if
+      if (use_lfmmllr .and. nelllf.ne.0) then
+         fstr = '('' LFMM: L-L pure rep.'',8x,'//form1//')'
+         write (iout,fstr)  elllf,nelllf
+      end if
+      if (use_lfmmvwl .and. nevwlf.ne.0) then
+         fstr = '('' LFMM: L-L rep. vdW'',9x,'//form1//')'
+         write (iout,fstr)  evwlf,nevwlf
+      end if
+      if (use_lfmmelp .and. nepair.ne.0) then
+         fstr = '('' LFMM: electron pairing'',5x,'//form1//')'
+         write (iout,fstr)  epair,nepair
+      end if
+      if (use_snb .and. nesnb.ne.0) then
+         fstr = '('' 12-10 van der Waals '',7x,'//form1//')'
+         write (iout,fstr)  esnb,nesnb
+      end if
       if (use_geom .and. neg.ne.0) then
          fstr = '('' Geometric Restraints'',7x,'//form1//')'
          write (iout,fstr)  eg,neg
@@ -1476,6 +1735,7 @@ c
       include 'atoms.i'
       include 'iounit.i'
       include 'virial.i'
+      integer i
       real*8 energy
       real*8, allocatable :: derivs(:,:)
 c
@@ -1532,7 +1792,9 @@ c
      &           /,15x,'EIT',13x,'ET',14x,'EPT',13x,'EBT',
      &           /,15x,'ETT',13x,'EV',14x,'EC',14x,'ECD',
      &           /,15x,'ED',14x,'EM',14x,'EP',14x,'ER',
-     &           /,15x,'ES',14x,'ELF',13x,'EG',14x,'EX')
+     &           /,15x,'ES',14x,'ELF',13x,'EG',14x,'EX'
+     &           /,15x,'ELFSE',11x,'EHALF',11x,'EMOLF',11x,'ELLLF',
+     &           /,15x,'EVWLF',11x,'EPAIR',11x,'ESNB')
       else if (digits .ge. 6) then
          write (iout,20)
    20    format (/,'  Atom',8x,'EB',12x,'EA',12x,'EBA',11x,'EUB',
@@ -1541,7 +1803,10 @@ c
      &              11x,'ET',
      &           /,14x,'EPT',11x,'EBT',11x,'ETT',11x,'EV',12x,'EC',
      &           /,14x,'ECD',11x,'ED',12x,'EM',12x,'EP',12x,'ER',
-     &           /,14x,'ES',12x,'ELF',11x,'EG',12x,'EX')
+     &           /,14x,'ES',12x,'ELF',11x,'EG',12x,'EX',12x,'ELFSE',
+     &           /,14x,'EHALF',9x,'EMOLF',9x,'ELLLF',
+     &              9x,'EVWLF',9x,'EPAIR',
+     &           /,14x,'ESNB')  
       else
          write (iout,30)
    30    format (/,'  Atom',8x,'EB',10x,'EA',10x,'EBA',9x,'EUB',
@@ -1551,16 +1816,22 @@ c
      &           /,14x,'ETT',9x,'EV',10x,'EC',10x,'ECD',9x,'ED',
      &              10x,'EM',
      &           /,14x,'EP',10x,'ER',10x,'ES',10x,'ELF',9x,'EG',
-     &              10x,'EX')
+     &              10x,'EX',
+     &           /,14x,'ELFSE',7x,'EHALF',7x,'EMOLF',7x,'ELLLF',
+     &              7x,'EVWLF',7x,'EPAIR',
+     &           /,14x,'ESNB')
       end if
       if (digits .ge. 8) then
          fstr = '(/,i6,4f16.8,/,6x,4f16.8,/,6x,4f16.8,'//
-     &             '/,6x,4f16.8,/,6x,4f16.8,/,6x,4f16.8)'
+     &             '/,6x,4f16.8,/,6x,4f16.8,/,6x,4f16.8'//
+     &             '/,6x,4f16.8,/,6x,3f16.8)'
       else if (digits .ge. 6) then
          fstr = '(/,i6,5f14.6,/,6x,5f14.6,/,6x,5f14.6,'//
-     &             '/,6x,5f14.6,/,6x,4f14.6)'
+     &             '/,6x,5f14.6,/,6x,5f14.6'//
+     &             '/,6x,5f14.6,/,6x,f14.6)'
       else
-         fstr = '(/,i6,6f12.4,/,6x,6f12.4,/,6x,6f12.4,/,6x,6f12.4)'
+         fstr = '(/,i6,6f12.4,/,6x,6f12.4,/,6x,6f12.4,/,6x,6f12.4,'//
+     &             '/,6x,6f12.4,/,6x,f12.4)'
       end if
       do i = 1, n
          if (active(i)) then
@@ -1568,7 +1839,9 @@ c
      &                         aeopb(i),aeopd(i),aeid(i),aeit(i),aet(i),
      &                         aept(i),aebt(i),aett(i),aev(i),aec(i),
      &                         aecd(i),aed(i),aem(i),aep(i),aer(i),
-     &                         aes(i),aelf(i),aeg(i),aex(i)
+     &                         aes(i),aelf(i),aeg(i),aex(i),
+     &                         aelfse(i),aehalf(i),aemolf(i),aelllf(i),
+     &                         aevwlf(i),aepair(i),aesnb(i)
          end if
       end do
       return
@@ -1675,7 +1948,7 @@ c
    80    format (' Urey-Bradley',14x,i15)
       end if
       if (nangang .ne. 0) then
-         write (iout,80)  nangang
+         write (iout,90)  nangang
    90    format (' Angle-Angles',14x,i15)
       end if
       if (nopbend .ne. 0) then
@@ -2521,3 +2794,233 @@ c
       end if
       return
       end
+c
+c
+c     ################################################################
+c     ##                                                            ##
+c     ##  subroutine gradyze  --  compute & report energy gradient  ##
+c     ##                                                            ##
+c     ################################################################
+c
+c
+c     "gradyze" is an auxiliary routine for the analyze program
+c     that computes and report the first derivatives of the potential
+c     energy with respect to Cartesian coordinates
+c
+c
+      subroutine gradyze
+      implicit none
+      include 'sizes.i'
+      include 'iounit.i'
+      include 'inform.i'
+      include 'atoms.i'
+      integer i
+      real*8 energy
+      real*8, allocatable :: derivs(:,:)
+      character*120 fstr
+c
+c
+c     allocate temporary array and initialize energy
+c
+      allocate (derivs(3,n))
+      energy = 0.0d0
+c
+c     perform calculation of energy and first derivatives
+c
+      call gradient(energy,derivs) 
+c
+c     check for an illegal value for the total energy
+c
+      if (isnan(energy)) then
+         write (iout,10)
+   10    format (/,' GRADIENT  --  Illegal Value for the Total',
+     &              ' Potential Energy')
+         call fatal
+      end if
+c
+c     report the gradient
+c
+   20 format (/,6x, 'Total energy Cartesian coordinate derivatives',
+     &        /,62('='),
+     &        /,6x,'i',11x,'X',16x,'Y',16x,'Z')
+      write(iout,20)
+      fstr = '(1x,i6,2x,3(f16.4,2x)'
+      if (digits .ge. 5) fstr = '(1x,i6,2x,3(f16.5,2x))'
+      if (digits .ge. 6) fstr = '(1x,i6,2x,3(f18.6,2x))'
+      if (digits .ge. 8) fstr = '(1x,i6,2x,3(f20.8,2x))'
+      do i=1,n
+         write(iout,fstr)  i,derivs(:,i)
+      enddo
+c
+c     deallocate temporary array
+c 
+      deallocate(derivs)
+      return
+      end subroutine
+c
+c
+c     ##################################################################
+c     ##                                                              ##
+c     ##  graddecompyze  --  gradient and its decomposition analysis  ##
+c     ##                                                              ##
+c     ##################################################################
+c
+c
+c     "graddecompyze" is an auxiliary routine for the analyze program
+c     that computes the first derivatives of the potential
+c     energy with respect to Cartesian coordinates and reports its 
+c     decomposition analysis
+c
+c
+      subroutine graddecompyze
+      implicit none
+      include 'sizes.i'
+      include 'iounit.i'
+      include 'inform.i'
+      include 'atoms.i'
+      include 'deriv.i'
+      integer i
+      character*120 fstr
+c
+c
+c     calculate and report gradient
+c
+      call gradyze
+c
+c     decomposition analysis
+c
+  20  format (/,6x,a,' energy component - Cartesian coord. derivatives',
+     &        /,62('='),
+     &        /,6x,'i',11x,'X',18x,'Y',18x,'Z')
+
+      fstr = '(1x,i6,2x,3(f16.4,2x))'
+      if (digits .ge. 5)  fstr = '(1x,i6,2x,3(f17.5,2x))'
+      if (digits .ge. 6)  fstr = '(1x,i6,2x,3(f18.6,2x))'
+      if (digits .ge. 8)  fstr = '(1x,i6,2x,3(f20.8,2x))'
+
+      write(iout,20) "eb" 
+      do i=1,n
+         write(iout,fstr) i,deb(:,i)
+      enddo
+      write(iout,20) "ea" 
+      do i=1,n
+         write(iout,fstr) i,dea(:,i)
+      enddo
+      write(iout,20) "eba" 
+      do i=1,n
+         write(iout,fstr) i,deba(:,i)
+      enddo
+      write(iout,20) "eub" 
+      do i=1,n
+         write(iout,fstr) i,deub(:,i)
+      enddo
+      write(iout,20) "eaa" 
+      do i=1,n
+         write(iout,fstr) i,deaa(:,i)
+      enddo
+      write(iout,20) "eopb" 
+      do i=1,n
+         write(iout,fstr) i,deopb(:,i)
+      enddo
+      write(iout,20) "eopd" 
+      do i=1,n
+         write(iout,fstr) i,deopd(:,i)
+      enddo
+      write(iout,20) "eid" 
+      do i=1,n
+         write(iout,fstr) i,deid(:,i)
+      enddo
+      write(iout,20) "eit" 
+      do i=1,n
+         write(iout,fstr) i,deit(:,i)
+      enddo
+      write(iout,20) "et" 
+      do i=1,n
+         write(iout,fstr) i,det(:,i)
+      enddo
+      write(iout,20) "ept" 
+      do i=1,n
+         write(iout,fstr) i,dept(:,i)
+      enddo
+      write(iout,20) "ebt" 
+      do i=1,n
+         write(iout,fstr) i,debt(:,i)
+      enddo
+      write(iout,20) "ett" 
+      do i=1,n
+         write(iout,fstr) i,dett(:,i)
+      enddo
+      write(iout,20) "ev" 
+      do i=1,n
+         write(iout,fstr) i,dev(:,i)
+      enddo
+      write(iout,20) "ec" 
+      do i=1,n
+         write(iout,fstr) i,dec(:,i)
+      enddo
+      write(iout,20) "ecd" 
+      do i=1,n
+         write(iout,fstr) i,decd(:,i)
+      enddo
+      write(iout,20) "ed" 
+      do i=1,n
+         write(iout,fstr) i,ded(:,i)
+      enddo
+      write(iout,20) "em" 
+      do i=1,n
+         write(iout,fstr) i,dem(:,i)
+      enddo
+      write(iout,20) "ep" 
+      do i=1,n
+         write(iout,fstr) i,dep(:,i)
+      enddo
+      write(iout,20) "er" 
+      do i=1,n
+         write(iout,fstr) i,der(:,i)
+      enddo
+      write(iout,20) "es" 
+      do i=1,n
+         write(iout,fstr) i,des(:,i)
+      enddo
+      write(iout,20) "elf" 
+      do i=1,n
+         write(iout,fstr) i,delf(:,i)
+      enddo
+      write(iout,20) "eg" 
+      do i=1,n
+         write(iout,fstr) i,deg(:,i)
+      enddo
+      write(iout,20) "ex" 
+      do i=1,n
+         write(iout,fstr) i,dex(:,i)
+      enddo
+      write(iout,20) "ehalf" 
+      do i=1,n
+         write(iout,fstr) i,dehalf(:,i)
+      enddo
+      write(iout,20) "emolf" 
+      do i=1,n
+         write(iout,fstr) i,demolf(:,i)
+      enddo
+      write(iout,20) "elllf" 
+      do i=1,n
+         write(iout,fstr) i,delllf(:,i)
+      enddo
+      write(iout,20) "evwlf" 
+      do i=1,n
+         write(iout,fstr) i,devwlf(:,i)
+      enddo
+      write(iout,20) "epair" 
+      do i=1,n
+         write(iout,fstr) i,depair(:,i)
+      enddo
+      write(iout,20) "elfse" 
+      do i=1,n
+         write(iout,fstr) i,delfse(:,i)
+      enddo
+      write(iout,20) "esnb" 
+      do i=1,n
+         write(iout,fstr) i,desnb(:,i)
+      enddo
+      return
+      end subroutine

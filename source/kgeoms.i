@@ -39,6 +39,7 @@ c     nchir      number of chirality restraints to be applied
 c     ichir      atom numbers defining each chirality restraint
 c     use_basin  logical flag governing use of Gaussian basin
 c     use_wall   logical flag governing use of droplet boundary
+c     use_tfix2  use sigma-shaped functional type for torsional restraints
 c
 c
       integer npfix,ipfix
@@ -52,7 +53,7 @@ c
       real*8 pfix,dfix,afix
       real*8 tfix,gfix,chir
       real*8 depth,width,rwall
-      logical use_basin,use_wall
+      logical use_basin,use_wall,use_tfix2
       common /kgeoms/ xpfix(maxfix),ypfix(maxfix),zpfix(maxfix),
      &                pfix(2,maxfix),dfix(3,maxfix),afix(3,maxfix),
      &                tfix(3,maxfix),gfix(3,maxfix),chir(3,maxfix),
@@ -60,4 +61,4 @@ c
      &                kpfix(3,maxfix),ndfix,idfix(2,maxfix),nafix,
      &                iafix(3,maxfix),ntfix,itfix(4,maxfix),ngfix,
      &                igfix(2,maxfix),nchir,ichir(4,maxfix),use_basin,
-     &                use_wall
+     &                use_wall,use_tfix2

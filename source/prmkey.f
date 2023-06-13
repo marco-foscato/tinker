@@ -30,6 +30,7 @@ c
       include 'torpot.i'
       include 'urypot.i'
       include 'vdwpot.i'
+      include 'kgeoms.i'
       integer next
       character*4 value
       character*20 keyword
@@ -158,6 +159,60 @@ c
          if (value .eq. 'ONLY')  call potoff
          use_metal = .true.
          if (value .eq. 'NONE')  use_metal = .false.
+      else if (keyword(1:9) .eq. 'LFMMTERM ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY')  call potoff
+         use_lfmm = .true.
+         use_lfmmhar = .true.
+         use_lfmmmor = .true.
+         use_lfmmllr = .true.
+         use_lfmmvwl = .true.
+         use_lfmmelp = .true.
+         use_lfmmlfs = .true.
+         if (value .eq. 'NONE') then
+            use_lfmm = .false.
+            use_lfmmhar = .false.
+            use_lfmmmor = .false.
+            use_lfmmllr = .false.
+            use_lfmmvwl = .false.
+            use_lfmmelp = .false.
+            use_lfmmlfs = .false.
+         endif
+      else if (keyword(1:14) .eq. 'HARM-LFMMTERM ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY')  call potoff
+         use_lfmmhar = .true.
+         if (value .eq. 'NONE')  use_lfmmhar = .false.
+      else if (keyword(1:15) .eq. 'MORSE-LFMMTERM ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY')  call potoff
+         use_lfmmmor = .true.
+         if (value .eq. 'NONE')  use_lfmmmor = .false.
+      else if (keyword(1:13) .eq. 'LLR-LFMMTERM ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY')  call potoff
+         use_lfmmllr = .true.
+         if (value .eq. 'NONE')  use_lfmmllr = .false.
+      else if (keyword(1:14) .eq. 'VWLL-LFMMTERM ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY')  call potoff
+         use_lfmmvwl = .true.
+         if (value .eq. 'NONE')  use_lfmmvwl = .false.
+      else if (keyword(1:14) .eq. 'PAIR-LFMMTERM ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY')  call potoff
+         use_lfmmelp = .true.
+         if (value .eq. 'NONE')  use_lfmmelp = .false.
+      else if (keyword(1:14) .eq. 'LFSE-LFMMTERM ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY')  call potoff
+         use_lfmmlfs = .true.
+         if (value .eq. 'NONE')  use_lfmmlfs = .false.
+      else if (keyword(1:12) .eq. '1210VDWTERM ') then
+         call getword (record,value,next)
+         if (value .eq. 'ONLY')  call potoff
+         use_snb = .true.
+         if (value .eq. 'NONE')  use_snb = .false.
       else if (keyword(1:13) .eq. 'RESTRAINTERM ') then
          call getword (record,value,next)
          if (value .eq. 'ONLY')  call potoff
@@ -323,6 +378,10 @@ c
          neutnbr = .true.
       else if (keyword(1:15) .eq. 'NEUTRAL-GROUPS ') then
          neutcut = .true.
+      else if (keyword(1:20) .eq. 'DIST-DEP-DIELECTRIC ') then
+         rdepdielec = .true.
+      else if (keyword(1:15) .eq. 'CHG-TAPER-TYPE ') then
+         read (string,*,err=10,end=10)  tapertype
 c
 c     set control parameters for atomic multipole potentials
 c
@@ -393,7 +452,12 @@ c     set control parameters for reaction field potentials
 c
       else if (keyword(1:14) .eq. 'REACTIONFIELD ') then
          read (string,*,err=10,end=10)  rfsize,rfbulkd,rfterms
-      end if
+c
+c     set flag governing sigma-shaped functional form for torsional restraints
+c
+      else if (keyword(1:20) .eq. 'SIGMA-TOR-RESTRAINT ') then
+         use_tfix2 = .true.
+      endif
 c
 c     jump directly to the end if any error was detected
 c
@@ -434,6 +498,7 @@ c
       use_strtor = .false.
       use_tortor = .false.
       use_vdw = .false.
+      use_snb = .false.
       use_charge = .false.
       use_chgdpl = .false.
       use_dipole = .false.
@@ -442,6 +507,13 @@ c
       use_rxnfld = .false.
       use_solv = .false.
       use_metal = .false.
+      use_lfmm = .false.
+      use_lfmmhar = .false.
+      use_lfmmmor = .false.
+      use_lfmmllr = .false.
+      use_lfmmvwl = .false.
+      use_lfmmelp = .false.
+      use_lfmmlfs = .false.
       use_geom = .false.
       use_extra = .false.
       return

@@ -61,6 +61,13 @@ c
       elf = 0.0d0
       eg = 0.0d0
       ex = 0.0d0
+      elfse = 0.0d0
+      ehalf = 0.0d0
+      emolf = 0.0d0
+      elllf = 0.0d0
+      evwlf = 0.0d0
+      epair = 0.0d0
+      esnb = 0.0d0
 c
 c     zero out each of the first derivative components
 c
@@ -90,6 +97,13 @@ c
             delf(j,i) = 0.0d0
             deg(j,i) = 0.0d0
             dex(j,i) = 0.0d0
+            delfse(j,i) = 0.0d0
+            dehalf(j,i) = 0.0d0
+            demolf(j,i) = 0.0d0
+            delllf(j,i) = 0.0d0
+            devwlf(j,i) = 0.0d0
+            depair(j,i) = 0.0d0
+            desnb(j,i) = 0.0d0
          end do
       end do
 c
@@ -148,6 +162,7 @@ c
          if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal1
          if (vdwtyp .eq. 'GAUSSIAN')  call egauss1
       end if
+      if (use_snb) call esnbnd1
 c
 c     call the electrostatic energy and gradient routines
 c
@@ -163,12 +178,19 @@ c
       if (use_metal)  call emetal1
       if (use_geom)  call egeom1
       if (use_extra)  call extra1
+      if (use_lfmmhar)  call harm4lfmm1
+      if (use_lfmmmor)  call morse4lfmm1
+      if (use_lfmmvwl)  call vdw4lfmm1
+      if (use_lfmmllr)  call ll4lfmm1
+      if (use_lfmmelp)  call pair4lfmm1
+      if (use_lfmmlfs)  call lfse4lfmm1
 c
 c     sum up to get the total energy and first derivatives
 c
       esum = eb + ea + eba + eub + eaa + eopb + eopd + eid + eit
      &          + et + ept + ebt + ett + ev + ec + ecd + ed + em
-     &          + ep + er + es + elf + eg + ex
+     &          + ep + er + es + elf + eg + ex + esnb
+     &          + ehalf + emolf + elllf + evwlf + epair + elfse
       energy = esum
       do i = 1, n
          do j = 1, 3
@@ -180,6 +202,9 @@ c
      &                      + decd(j,i) + ded(j,i) + dem(j,i)
      &                      + dep(j,i) + der(j,i) + des(j,i)
      &                      + delf(j,i) + deg(j,i) + dex(j,i)
+     &                      + dehalf(j,i) + demolf(j,i) + delllf(j,i)
+     &                      + devwlf(j,i) + depair(j,i) + delfse(j,i)
+     &                      + desnb(j,i)
             derivs(j,i) = desum(j,i)
          end do
       end do

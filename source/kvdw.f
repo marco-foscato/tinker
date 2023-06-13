@@ -35,7 +35,9 @@ c
       include 'potent.i'
       include 'vdw.i'
       include 'vdwpot.i'
-      integer i,k,ia,ib
+      include 'ksnbnd.i'
+      include 'snbnb.i'
+      integer i,k,l,ia,ib
       integer next,size
       integer number
       real*8 rd,ep,rdn,gik
@@ -435,7 +437,7 @@ c
 c
 c     use reduced values for MMFF donor-acceptor pairs
 c
-      if (forcefield .eq. 'MMFF94') then
+      if (forcefield .eq. 'MMFF94' .or. forcefield .eq. 'MMFFLF') then
          do i = 1, maxclass
             do k = i, maxclass
                if ((da(i).eq.'D' .and. da(k).eq.'A') .or.
@@ -561,5 +563,41 @@ c
 c     turn off the van der Waals potential if it is not used
 c
       if (nvdw .eq. 0)  use_vdw = .false.
+c
+c     set 12-10 vdw terms
+c
+      nsnb = 0
+      if (use_snb) then
+         do i = 1, n
+            ia = class(i)
+            do k = i, n
+               ib = class(k)
+               do l = 1, maxpsnb
+                  if (kisnb(1,l).eq.0 .and. kisnb(2,l).eq.0) exit
+                  if ((kisnb(1,l).eq.ia .and. kisnb(2,l).eq.ib) .or.
+     &                (kisnb(1,l).eq.ib .and. kisnb(2,l).eq.ia)) then
+                     nsnb = nsnb + 1
+                     isnb(1,nsnb) = i
+                     isnb(2,nsnb) = k
+                     rsnd(nsnb) = krsnd(l)
+                     epssnb(nsnb) = kepssnb(l)
+c
+c                    by default 12-10 terms should replace the above 
+c                    defined potential for a given pair of classes
+c                    
+                     epsilon(ia,ib) = 0.0d0
+                     epsilon(ib,ia) = 0.0d0
+                     epsilon4(ia,ib) = 0.0d0
+                     epsilon4(ib,ia) = 0.0d0
+                     exit
+                  endif
+               end do
+            end do
+         end do
+      end if
+c
+c     turn off 12-10 potential if it is not used
+c
+      if (nsnb .eq. 0) use_snb = .false.
       return
       end

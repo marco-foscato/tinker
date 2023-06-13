@@ -56,6 +56,13 @@ c
       elf = 0.0d0
       eg = 0.0d0
       ex = 0.0d0
+      ehalf = 0.0d0
+      emolf = 0.0d0
+      elllf = 0.0d0
+      evwlf = 0.0d0
+      epair = 0.0d0
+      elfse = 0.0d0
+      esnb = 0.0d0
 c
 c     maintain any periodic boundary conditions
 c
@@ -103,6 +110,7 @@ c
          if (vdwtyp .eq. 'BUFFERED-14-7')  call ehal
          if (vdwtyp .eq. 'GAUSSIAN')  call egauss
       end if
+      if (use_snb) call esnbnd
 c
 c     call the electrostatic energy component routines
 c
@@ -118,12 +126,19 @@ c
       if (use_geom)  call egeom
       if (use_metal)  call emetal
       if (use_extra)  call extra
+      if (use_lfmmhar)  call harm4lfmm
+      if (use_lfmmmor)  call morse4lfmm
+      if (use_lfmmvwl)  call vdw4lfmm
+      if (use_lfmmllr)  call ll4lfmm
+      if (use_lfmmelp)  call pair4lfmm
+      if (use_lfmmlfs)  call lfse4lfmm
 c
 c     sum up to give the total potential energy
 c
       esum = eb + ea + eba + eub + eaa + eopb + eopd + eid + eit
      &          + et + ept + ebt + ett + ev + ec + ecd + ed + em
-     &          + ep + er + es + elf + eg + ex
+     &          + ep + er + es + elf + eg + ex + esnb
+     &          + ehalf + emolf + elllf + evwlf + epair + elfse
       energy = esum
 c
 c     check for an illegal value for the total energy

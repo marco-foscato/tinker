@@ -13,11 +13,13 @@ c     ###########################################################
 c
 c
 c     bk      bond stretch force constants (kcal/mole/Ang**2)
+c     bkpoly  bond stretch force constants for polynomial form
 c     bl      ideal bond length values in Angstroms
 c     nbond   total number of bond stretches in the system
 c     ibnd    numbers of the atoms in each bond stretch
 c
 c
       integer nbond,ibnd
-      real*8 bk,bl
-      common /bond/ bk(maxbnd),bl(maxbnd),nbond,ibnd(2,maxbnd)
+      real*8 bk,bl,bkpoly
+      common /bond/ bk(maxbnd),bl(maxbnd),ibnd(2,maxbnd),
+     &              bkpoly(maxbnd,3),nbond
