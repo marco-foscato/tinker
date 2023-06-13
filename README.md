@@ -41,10 +41,10 @@ make -f make/Makefile_TinkerLFMM install
 ```
 
 ## Test and Examples
-Test that compare the results of TinkerLFMM against the reference results from [DommiMOE](https://doi.org/10.1002/jcc.20137) are available at this location: __TODO_add_link__
+Test that compare the results of TinkerLFMM against the reference results from [DommiMOE](https://doi.org/10.1002/jcc.20137) are available in [a dedicated repository](https://github.com/marco-foscato/TinkerLFMM_tests).
 
 ## Usage
-The following lists contain all the documentation needed to use the LFMM method in Tinker. For worked out examples, please see __TODO_add_link__.
+The following lists contain all the documentation needed to use the LFMM method in Tinker. For worked out examples, please see [the repository with tests](https://github.com/marco-foscato/TinkerLFMM_tests).
 
 ### Keywords for LFMM calculations
 
