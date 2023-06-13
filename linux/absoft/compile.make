@@ -373,3 +373,13 @@ f77 -c -O xyzint.f
 f77 -c -O xyzpdb.f
 f77 -c -O xyzsybyl.f
 f77 -c -O zatom.f
+f77 -c -O klfmm.f
+f77 -c -O elfmm.f
+f77 -c -O elfmm1.f
+f77 -c -O elfmm2.f
+f77 -c -O elfmm3.f
+f77 -c -O esnbnd.f
+f77 -c -O esnbnd1.f
+f77 -c -O esnbnd2.f
+f77 -c -O esnbnd3.f
+f77 -c -O iccglfse.f

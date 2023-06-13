@@ -372,3 +372,13 @@ pgf77 -c -fast xyzint.f
 pgf77 -c -fast xyzpdb.f
 pgf77 -c -fast xyzsybyl.f
 pgf77 -c -fast zatom.f
+pgf77 -c -fast klfmm.f
+pgf77 -c -fast elfmm.f
+pgf77 -c -fast elfmm1.f
+pgf77 -c -fast elfmm2.f
+pgf77 -c -fast elfmm3.f
+pgf77 -c -fast esnbnd.f
+pgf77 -c -fast esnbnd1.f
+pgf77 -c -fast esnbnd2.f
+pgf77 -c -fast esnbnd3.f
+pgf77 -c -fast iccglfse.f

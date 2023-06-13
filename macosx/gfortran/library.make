@@ -311,4 +311,16 @@ verlet.o \
 version.o \
 volume.o \
 xyzatm.o \
-zatom.o
+zatom.o \
+klfmm.o \
+elfmm.o \
+elfmm1.o \
+elfmm2.o \
+elfmm3.o \
+esnbnd.o \
+esnbnd1.o \
+esnbnd2.o \
+esnbnd3.o \
+iccglfse.o
+
+

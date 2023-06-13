@@ -372,3 +372,13 @@ xlf -c -O xyzint.f
 xlf -c -O xyzpdb.f
 xlf -c -O xyzsybyl.f
 xlf -c -O zatom.f
+xlf -c -O klfmm.f
+xlf -c -O elfmm.f
+xlf -c -O elfmm1.f
+xlf -c -O elfmm2.f
+xlf -c -O elfmm3.f
+xlf -c -O esnbnd.f
+xlf -c -O esnbnd1.f
+xlf -c -O esnbnd2.f
+xlf -c -O esnbnd3.f
+xlf -c -O iccglfse.f

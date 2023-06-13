@@ -373,3 +373,13 @@ ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp xyzint.f
 ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp xyzpdb.f
 ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp xyzsybyl.f
 ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp zatom.f
+ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp klfmm.f
+ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp elfmm.f
+ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp elfmm1.f
+ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp elfmm2.f
+ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp elfmm3.f
+ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp esnbnd.f
+ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp esnbnd1.f
+ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp esnbnd2.f
+ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp esnbnd3.f
+ifort /c /O3 /Qip- /Qprec-div- /w /assume:cc_omp /Qopenmp iccglfse.f

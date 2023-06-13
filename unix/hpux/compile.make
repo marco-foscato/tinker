@@ -372,3 +372,13 @@ fort77 -c -O2 +E1 xyzint.f
 fort77 -c -O2 +E1 xyzpdb.f
 fort77 -c -O2 +E1 xyzsybyl.f
 fort77 -c -O2 +E1 zatom.f
+fort77 -c -O2 +E1 klfmm.f
+fort77 -c -O2 +E1 elfmm.f
+fort77 -c -O2 +E1 elfmm1.f
+fort77 -c -O2 +E1 elfmm2.f
+fort77 -c -O2 +E1 elfmm3.f
+fort77 -c -O2 +E1 esnbnd.f
+fort77 -c -O2 +E1 esnbnd1.f
+fort77 -c -O2 +E1 esnbnd2.f
+fort77 -c -O2 +E1 esnbnd3.f
+fort77 -c -O2 +E1 iccglfse.f

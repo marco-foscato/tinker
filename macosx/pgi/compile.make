@@ -372,3 +372,13 @@ pgf95 -c -fast -mp xyzint.f
 pgf95 -c -fast -mp xyzpdb.f
 pgf95 -c -fast -mp xyzsybyl.f
 pgf95 -c -fast -mp zatom.f
+pgf95 -c -fast -mp klfmm.f
+pgf95 -c -fast -mp elfmm.f
+pgf95 -c -fast -mp elfmm1.f
+pgf95 -c -fast -mp elfmm2.f
+pgf95 -c -fast -mp elfmm3.f
+pgf95 -c -fast -mp esnbnd.f
+pgf95 -c -fast -mp esnbnd1.f
+pgf95 -c -fast -mp esnbnd2.f
+pgf95 -c -fast -mp esnbnd3.f
+pgf95 -c -fast -mp iccglfse.f

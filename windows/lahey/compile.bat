@@ -373,3 +373,13 @@ LF95 -c -o1 -tpp -nstchk -ntrace xyzint.f
 LF95 -c -o1 -tpp -nstchk -ntrace xyzpdb.f
 LF95 -c -o1 -tpp -nstchk -ntrace xyzsybyl.f
 LF95 -c -o1 -tpp -nstchk -ntrace zatom.f
+LF95 -c -o1 -tpp -nstchk -ntrace klfmm.f
+LF95 -c -o1 -tpp -nstchk -ntrace elfmm.f
+LF95 -c -o1 -tpp -nstchk -ntrace elfmm1.f
+LF95 -c -o1 -tpp -nstchk -ntrace elfmm2.f
+LF95 -c -o1 -tpp -nstchk -ntrace elfmm3.f
+LF95 -c -o1 -tpp -nstchk -ntrace esnbnd.f
+LF95 -c -o1 -tpp -nstchk -ntrace esnbnd1.f
+LF95 -c -o1 -tpp -nstchk -ntrace esnbnd2.f
+LF95 -c -o1 -tpp -nstchk -ntrace esnbnd3.f
+LF95 -c -o1 -tpp -nstchk -ntrace iccglfse.f

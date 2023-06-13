@@ -372,3 +372,13 @@ f77 -c -O -mips4 xyzint.f
 f77 -c -O -mips4 xyzpdb.f
 f77 -c -O -mips4 xyzsybyl.f
 f77 -c -O -mips4 zatom.f
+f77 -c -O -mips4 klfmm.f
+f77 -c -O -mips4 elfmm.f
+f77 -c -O -mips4 elfmm1.f
+f77 -c -O -mips4 elfmm2.f
+f77 -c -O -mips4 elfmm3.f
+f77 -c -O -mips4 esnbnd.f
+f77 -c -O -mips4 esnbnd1.f
+f77 -c -O -mips4 esnbnd2.f
+f77 -c -O -mips4 esnbnd3.f
+f77 -c -O -mips4 iccglfse.f

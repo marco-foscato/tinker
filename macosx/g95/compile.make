@@ -372,3 +372,13 @@ g95 -c -O2 xyzint.f
 g95 -c -O2 xyzpdb.f
 g95 -c -O2 xyzsybyl.f
 g95 -c -O2 zatom.f
+g95 -c -O2 klfmm.f
+g95 -c -O2 elfmm.f
+g95 -c -O2 elfmm1.f
+g95 -c -O2 elfmm2.f
+g95 -c -O2 elfmm3.f
+g95 -c -O2 esnbnd.f
+g95 -c -O2 esnbnd1.f
+g95 -c -O2 esnbnd2.f
+g95 -c -O2 esnbnd3.f
+g95 -c -O2 iccglfse.f

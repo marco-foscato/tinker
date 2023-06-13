@@ -372,3 +372,13 @@ f77 -c -fast -arch generic -tune generic xyzint.f
 f77 -c -fast -arch generic -tune generic xyzpdb.f
 f77 -c -fast -arch generic -tune generic xyzsybyl.f
 f77 -c -fast -arch generic -tune generic zatom.f
+f77 -c -fast -arch generic -tune generic klfmm.f
+f77 -c -fast -arch generic -tune generic elfmm.f
+f77 -c -fast -arch generic -tune generic elfmm1.f
+f77 -c -fast -arch generic -tune generic elfmm2.f
+f77 -c -fast -arch generic -tune generic elfmm3.f
+f77 -c -fast -arch generic -tune generic esnbnd.f
+f77 -c -fast -arch generic -tune generic esnbnd1.f
+f77 -c -fast -arch generic -tune generic esnbnd2.f
+f77 -c -fast -arch generic -tune generic esnbnd3.f
+f77 -c -fast -arch generic -tune generic iccglfse.f

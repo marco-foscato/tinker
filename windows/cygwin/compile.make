@@ -372,3 +372,13 @@ gfortran -c -O xyzint.f
 gfortran -c -O xyzpdb.f
 gfortran -c -O xyzsybyl.f
 gfortran -c -O zatom.f
+gfortran -c -O klfmm.f
+gfortran -c -O elfmm.f
+gfortran -c -O elfmm1.f
+gfortran -c -O elfmm2.f
+gfortran -c -O elfmm3.f
+gfortran -c -O esnbnd.f
+gfortran -c -O esnbnd1.f
+gfortran -c -O esnbnd2.f
+gfortran -c -O esnbnd3.f
+gfortran -c -O iccglfse.f

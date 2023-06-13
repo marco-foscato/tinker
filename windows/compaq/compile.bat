@@ -373,3 +373,13 @@ DF /compile_only /optimize /fast xyzint.f
 DF /compile_only /optimize /fast xyzpdb.f
 DF /compile_only /optimize /fast xyzsybyl.f
 DF /compile_only /optimize /fast zatom.f
+DF /compile_only /optimize /fast klfmm.f
+DF /compile_only /optimize /fast elfmm.f
+DF /compile_only /optimize /fast elfmm1.f
+DF /compile_only /optimize /fast elfmm2.f
+DF /compile_only /optimize /fast elfmm3.f
+DF /compile_only /optimize /fast esnbnd.f
+DF /compile_only /optimize /fast esnbnd1.f
+DF /compile_only /optimize /fast esnbnd2.f
+DF /compile_only /optimize /fast esnbnd3.f
+DF /compile_only /optimize /fast iccglfse.f

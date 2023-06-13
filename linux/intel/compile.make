@@ -372,3 +372,13 @@ ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp xyzint.f
 ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp xyzpdb.f
 ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp xyzsybyl.f
 ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp zatom.f
+ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp klfmm.f
+ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp elfmm.f
+ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp elfmm1.f
+ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp elfmm2.f
+ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp elfmm3.f
+ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp esnbnd.f
+ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp esnbnd1.f
+ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp esnbnd2.f
+ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp esnbnd3.f
+ifort -c -O3 -xHost -no-ipo -no-prec-div -assume cc_omp -openmp iccglfse.f
