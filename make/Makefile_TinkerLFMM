@@ -1,0 +1,170 @@
+##
+###################################################################
+##                                                               ##
+##  Makefile for Building TinkerLFMM                             ##
+##                                                               ##
+###################################################################
+##
+##  WARNING! You must modify the settings in the Makefiles
+##  of Tinker and LFSE to make them compatible with your machine 
+##  before expecting this Makefile to succseed. 
+##  Have a look at both $TINKERDIR/Makefile and $LFSEDIR/Makefile
+##
+##  Options:
+##  make all         Build both Tinker/LFMM
+##  make install     Hard copies of executable into $(TNKLFSEBIN)
+##  make clean       Remove object and executables
+##  make clean_lfse  Remove only LFSE object and executables
+##
+#################################################################
+##  Please alter the following section according to your site  ##
+#################################################################
+##  
+##  Relevant paths:
+##
+##  TINKERLFMM   Root of TinkerLFMM distribution
+##  TINKERDIR    Folder containing TINKER source code
+##  LFSEDIR      Folder containing LFSE source code
+##  TNKLFSEBIN   Hard copies of executables
+##
+
+TNKLFMMDIR = ${CURDIR}
+TINKERDIR = $(TNKLFMMDIR)/source
+LFSEDIR = $(TNKLFMMDIR)/source_lfse
+TNKLFSEBIN = $(TNKLFMMDIR)/bin
+
+###################################################################
+## Uncomment section matching you OS and compiler versions or    ##
+## make a new section that suites your machine configuration     ##
+###################################################################
+
+##
+##  Machine:  Generic Linux
+##  CPU Type: Intel x86 Compatible
+##  Oper Sys: Fedora Core
+##  Compiler: GNU gfortran
+##
+
+#F77 = /usr/bin/gfortran
+#LIBS =
+#F77FLAGS = -c -g -fbounds-check -fbacktrace
+#F77FLAGS = -c
+#OPTFLAGS = -O
+#LIBFLAGS = -crusv
+
+##
+##  Machine:  Macintosh
+##  CPU Type: Intel Core i5
+##  Oper Sys: OS X 10.9.4 (Mavericks, Darwin)
+##  Compiler: gfortran
+##
+
+F77 = /usr/local/Cellar/gcc@7/7.5.0_4/bin/gfortran-7
+LIBS = 
+F77FLAGS = -c 
+OPTFLAGS = -O 
+LIBFLAGS = -crusv
+LINKFLAGS = 
+
+## Add your own machine if necessary
+
+#################################################################
+##  Should not be Necessary to Change Things Below this Point  ##
+#################################################################
+
+export F77
+export LIBS
+export F77FLAGS
+export OPTFLAGS
+export LIBFLAGS
+export TNKLFMMDIR
+export TINKERDIR
+export LFSEDIR
+export TNKLFSEBIN
+
+EXEFILES = alchemy \
+           analyze \
+           anneal \
+           archive \
+           bar \
+           correlate \
+           crystal \
+           diffuse \
+           distgeom \
+           document \
+           dynamic \
+           gda \
+           intedit \
+           intxyz \
+           minimize \
+           minirot \
+           minrigid \
+           molxyz \
+           monte \
+           newton \
+           newtrot \
+           nucleic \
+           optimize \
+           optirot \
+           optrigid \
+           path \
+           pdbxyz \
+           polarize \
+           poledit \
+           potential \
+           prmedit \
+           protein \
+           pss \
+           pssrigid \
+           pssrot \
+           radial \
+           saddle \
+           scan \
+           sniffer \
+           spacefill \
+           spectrum \
+           superpose \
+           sybylxyz \
+           testgrad \
+           testhess \
+           testpair \
+           testpol \
+           testrot \
+           timer \
+           timerot \
+           torsfit \
+           valence \
+           vibbig \
+           vibrate \
+           vibrot \
+           xtalfit \
+           xtalmin \
+           xyzedit \
+           xyzint \
+           xyzpdb \
+           xyzsybyl
+
+%.x: $(TINKERDIR)/%.o $(LFSEDIR)/libtinkerlfmm.a
+	$(F77) $(LINKFLAGS) -o $@ $^ ; strip $@
+
+%: %.x
+	mv $^ $@
+
+all:     
+	cd $(TINKERDIR) ; $(MAKE) -S -f ../make/Makefile || (echo "Error during compilation of Tinker!" ; /bin/false) 
+	cd $(LFSEDIR) ; $(MAKE) -S || (echo "Error during compilation of LFSE!" ; /bin/false) 
+	$(MAKE) $(EXEFILES) -S -f make/Makefile_TinkerLFMM || (echo "Error while creating Tinker/LFMM executables" ; /bin/false)
+	@echo Compilation completed!
+
+install: $(EXEFILES)
+	mv $(EXEFILES) $(TNKLFSEBIN) 
+
+clean:
+	cd $(TINKERDIR) ; $(MAKE) clean -f ../make/Makefile
+	cd $(LFSEDIR) ; $(MAKE) clean
+	@echo Cleaning done!
+
+clean_lfse:
+	cd $(LFSEDIR) ; $(MAKE) clean
+	@echo Cleaning done!
+

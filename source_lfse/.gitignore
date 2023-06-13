@@ -1,0 +1,8 @@
+# We ignore all...
+*
+
+#...except these
+!.gitignore
+!README.md
+!Makefile
+!iccglfse.f

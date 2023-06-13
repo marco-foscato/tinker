@@ -1,3 +1,9 @@
 bin/
 source/Makefile
 source/*.make
+source/*.o
+source/*.x
+source/*.a
+source_lfse/*.o
+source_lfse/*.x
+source_lfse/*.a

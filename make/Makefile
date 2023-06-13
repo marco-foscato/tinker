@@ -36,7 +36,9 @@ LINKDIR = /usr/local/bin
 
 ####################################################################
 ##  Known Machine Types; Uncomment One of the Following Sections  ##
-##  May Need Editing to Match Your Desired OS & Compiler Version  ##
+##  May Need Editing to Match Your Desired OS & Compiler Version. ##
+##  NB: if you do not uncomment any section you'll use the        ##
+##  settings from the current environment.                        ##
 ####################################################################
 
 ##
@@ -60,12 +62,12 @@ LINKDIR = /usr/local/bin
 ##  Compiler: gfortran-7
 ##
 
-F77 = /usr/local/Cellar/gcc@7/7.5.0_4/bin/gfortran-7
-LIBS = 
-F77FLAGS = -c 
-OPTFLAGS = -O 
-LIBFLAGS = -crusv
-LINKFLAGS = 
+#F77 = /usr/local/Cellar/gcc@7/7.5.0_4/bin/gfortran-7
+#LIBS = 
+#F77FLAGS = -c 
+#OPTFLAGS = -O 
+#LIBFLAGS = -crusv
+#LINKFLAGS = 
 
 ##
 ##  Machine:  Generic Linux
