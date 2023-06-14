@@ -1,17 +1,17 @@
 
 # Integration of Tinker and LFMM method
 
- This documentation is specific for the modified version of <a href="http://dasher.wustl.edu/tinker/">Tinker v6.3.3</a> that can run calculations according to the Ligand Field Molecular Mechanics (LFMM) method as developed by Prof. Rob J. Deeth – University of Warwick, Inorganic Computational Chemistry Group (ICCG).
+This documentation is specific for the modified version of <a href="http://dasher.wustl.edu/tinker/">Tinker v6.3.3</a> that can run calculations according to the Ligand Field Molecular Mechanics (LFMM) method as developed by Prof. Rob J. Deeth – University of Warwick, Inorganic Computational Chemistry Group (ICCG).
 
 ## Integration Strategy
-TinkerLFMM is the result of integrating the capabilities of Dommino (the original software developed by Prof. Rob J. Deeth for Ligand field molecular mechanics - LFMM) into Tinker and, therefore, it  consists of two main building blocks:
+TinkerLFMM is the result of integrating the capabilities of Dommino (the original software developed by Prof. Rob J. Deeth for Ligand field molecular mechanics - LFMM) into Tinker and, therefore, it consists of two main building blocks:
 
 * *Tinker v6.3.3*: takes care of all regular molecular mechanics energy term, and behaves as sole interface with the user.
 * *ICCGLFSE*, ex-*Dommino*: calculates Ligand Field Stabilization Energy.
 
-Presently (June 2023), this repository contains only the modifier Tinker code.
+**NB:** Presently (June 2023), this repository contains only the modifier Tinker code. The code of the *ICCGLFSE* (*ex-Dommino*) must be obtained from Prof. Rob Deeth and places in the `source_lfse` folder!
 
-According to the LFMM method, the potential energy is calculated from an ensemble of regular MM-style energy terms and additional contributions describing each metal center. These extra terms consist of metal-ligands bond stretches, ligand-ligand interaction, electron pairing energy and ligand field stabilization energy. All such contributions to the total potential energy of the system, as well as  their contributions to the gradient and Hessian, are calculated by TinkerLFMM whenever the modelling task requires so, calling the `iccglfse` routine (see #Compilation).
+According to the LFMM method, the potential energy is calculated from a collection of regular MM-style energy terms and additional contributions for each metal center. These extra terms consist of metal-ligands bond stretches, ligand-ligand interaction, electron pairing energy and ligand field stabilization energy. All such contributions to the total potential energy of the system, as well as their contributions to the gradient and Hessian, are calculated by TinkerLFMM by calling the `iccglfse` routine whenever the modelling task requires so.
 
 ## Limitations
 The use of LFMM potential is compatible only with some of the methods that are available in the Tinker package. The following Tinker routines that have been tested with LFMM calculations:
@@ -30,21 +30,37 @@ Potential energy terms for LFMM are not compatible with the `SMOOTHING` option.
 
 Anything that is not explicitly reported here should be considered as not compatible.
 
-## Compilation
-Both Tinker and ICCGLFSE are written in Fortran (mixing Fortran 77 and 95) and are compiled independently. The present version of Tinker contains a placeholder routine `iccglfse` that is overwritten upon integration. The integrated TinkerLFMM is obtained by linking the compiled Tinker object files (*.o) with the corresponding object files of ICCGLFSE, which contain the actual `iccglfse` routine, and which should have been previously collected into a library during the compilation step.
-
-Makefiles are provided to allow a make-based building and installation, but you may have to edit the `make/Makefile_TinkerLFMM` and `make/Makefile` to use the compile or your choice:
+## Compilation of Tinker
+If you have the source code of *ICCGLFSE*, you can skip this section and go to the [compilation of both Tinker and ICCLFSE](#Compilation-of-both-Tinker-and-ICCLFSE), otherwise you can stil compile the modified version of Tinker and play around with it. To this end do this from within the outernmost folder of this repository (**NB:** you need to edit `make/Makefile` to specify the compiler and its settings):
 
 ```
+mkdir bin
+cd source
+make -f ../make/Makefile
+make -f ../make/Makefile rename
+```
+You'll find the executables in the newly created `bin` folder.
+
+## Compilation of both Tinker and ICCLFSE
+**NB:** You can do this only after having placed the source code of *ICCGLFSE* in the `source_lfse`.
+
+Both Tinker and *ICCGLFSE* are written in Fortran (mixing Fortran 77 and 95) and are compiled independently. The integrated TinkerLFMM is obtained by linking the compiled Tinker object files (`*.o`) with the corresponding object files of ICCGLFSE, which contain the actual `iccglfse` routine, and which should have been previously collected into a library during the compilation step.
+
+Makefiles are provided to allow a make-based building and installation, but you may have to edit the `make/Makefile_TinkerLFMM` to costomize compilation to your needs. Since the code adhers to old-fashion code standards, we reccomend using `gfortran` compiler from [GCC-7.5](https://gcc.gnu.org/gcc-7/), or analogous.
+Once you have edited the makefile, you can compile as by doing this from within the outernmost folder of this repository:
+
+```
+mkdir -p bin
 make -f make/Makefile_TinkerLFMM
 make -f make/Makefile_TinkerLFMM install
 ```
+You'll find the executables in the newly created `bin` folder.
 
 ## Test and Examples
 Test that compare the results of TinkerLFMM against the reference results from [DommiMOE](https://doi.org/10.1002/jcc.20137) are available in [a dedicated repository](https://github.com/marco-foscato/TinkerLFMM_tests).
 
 ## Usage
-The following lists contain all the documentation needed to use the LFMM method in Tinker. For worked out examples, please see [the repository with tests](https://github.com/marco-foscato/TinkerLFMM_tests).
+The following sections contain all the documentation needed to run LFMM calculation with TinkerLFMM. For worked out examples, please see [the repository with tests](https://github.com/marco-foscato/TinkerLFMM_tests).
 
 ### Keywords for LFMM calculations
 
